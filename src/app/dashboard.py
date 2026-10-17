@@ -97,7 +97,7 @@ with tab4:
     st.subheader("Live Internet Telescope Feed Analysis")
     col_opt1, col_opt2 = st.columns([2, 1])
     with col_opt1:
-        img_url = st.text_input("Enter Astronomical Image URL (.jpg or .png):", "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Starlink_Trails_over_the_Uruguayan_sky.jpg/800px-Starlink_Trails_over_the_Uruguayan_sky.jpg")
+        img_url = st.text_input("Enter Astronomical Image URL (.jpg or .png):", "https://upload.wikimedia.org/wikipedia/commons/d/d7/Starlink_Trails_over_the_Uruguayan_sky.jpg")
         streak_len = st.slider("Min Streak Length (px)", 10, 200, 50)
         
         try:
