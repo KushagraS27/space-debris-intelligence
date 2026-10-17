@@ -1,40 +1,16 @@
-# Dataset Card
+﻿# Dataset Card: CelesTrak GP/OMM Snapshots
 
-## Project
-Low Cost Uncertainty Aware Space Debris Intelligence
+## Dataset Overview
+* **Source:** CelesTrak General Perturbation (GP) Orbital Mean Elements (OMM).
+* **Format:** Chronologically versioned JSON snapshots.
+* **Population:** Active satellites, rocket bodies, and catalogued fragmentation debris.
 
-## Version
-0.1
+## Intended Use
+* Research-grade SGP4 orbital propagation.
+* Evaluating empirical position degradation over specific propagation horizons.
+* Training semi-supervised novelty detection models (Isolation Forests, SVMs) to triage anomalous behavior.
 
-## Purpose
-Build a reproducible research pipeline for screening catalogued space objects.
-This system is for research screening only. It does not produce certified collision warnings or collision probabilities.
-
-## Primary source
-CelesTrak public General Perturbations data in OMM compatible JSON format.
-
-## Pilot snapshot
-- Initial test group: `STATIONS`
-- Purpose: verify download, raw-data versioning, checksum creation, and schema validation.
-- Storage: `data/raw/snapshots/<timestamp>/`
-- Raw records are not committed to GitHub.
-
-## Research population to add next
-- Debris group: `COSMOS-2251-DEBRIS`
-- Reference population: selected active satellites.
-- Initial orbital regime: low Earth orbit.
-
-## Stored provenance
-Each snapshot manifest records:
-- source URL
-- retrieval time in UTC
-- requested CelesTrak group
-- format
-- record count
-- SHA 256 checksum
-
-## Known limitations
-- GP/OMM records are not full uncertainty or covariance data.
-- Input age affects forecast quality.
-- A close approach found by this project is a screening candidate, not a collision probability.
-- The catalogue does not represent every debris object.
+## Limitations, Biases & Safety Boundaries
+* **Not for Collision Avoidance:** This system is a research prototype. Output candidate distances are labeled strictly as "screening," and must never be used for operational satellite maneuvers or collision probability claims.
+* **Data Staleness:** Subject to global sensor tracking gaps; older records inherently contain higher unmodeled uncertainty.
+* **Synthetic Injection:** For the purpose of ML ensemble evaluation, synthetic classifications (Foreign/Unknown) and relative velocity kinematics were programmatically injected into the screening pipeline.
