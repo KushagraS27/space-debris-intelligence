@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import cv2
-import requests
+from sklearn.metrics import precision_recall_curve, auc
 from src.optical.detect_streaks import detect_streaks
 
 st.set_page_config(page_title="Advanced Space Debris Intelligence", layout="wide")
@@ -94,32 +94,32 @@ with tab3:
     st.dataframe(filtered_data[exist_base], use_container_width=True)
 
 with tab4:
-    st.subheader("Live Internet Telescope Feed Analysis")
+    st.subheader("Local Dataset Telescope Feed Analysis")
     col_opt1, col_opt2 = st.columns([2, 1])
     with col_opt1:
-        img_url = st.text_input("Enter Astronomical Image URL (.jpg or .png):", "https://upload.wikimedia.org/wikipedia/commons/d/d7/Starlink_Trails_over_the_Uruguayan_sky.jpg")
+        optical_dir = Path("data/optical_frames")
+        available_images = list(optical_dir.glob("*.jpg")) + list(optical_dir.glob("*.png"))
+        
+        if available_images:
+            selected_img = st.selectbox("Select Local Astronomical Image:", [img.name for img in available_images])
+            img_path = optical_dir / selected_img
+            frame = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
+        else:
+            st.warning("No local images found in data/optical_frames. Using a synthetic frame.")
+            frame = np.zeros((512, 512), dtype=np.uint8)
+            cv2.line(frame, (80, 120), (340, 380), 255, 2)
+            
         streak_len = st.slider("Min Streak Length (px)", 10, 200, 50)
         
-        try:
-            # FIX: Added User-Agent header to bypass 403 Forbidden errors
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-            resp = requests.get(img_url, headers=headers, timeout=15)
-            resp.raise_for_status()
-            img_array = np.asarray(bytearray(resp.content), dtype=np.uint8)
-            frame = cv2.imdecode(img_array, cv2.IMREAD_GRAYSCALE)
-            
-            if frame is not None:
-                detections, _ = detect_streaks(frame, min_length=streak_len)
-                annotated = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
-                for d in detections:
-                    if isinstance(d, dict) and 'start' in d and 'end' in d:
-                        cv2.line(annotated, d['start'], d['end'], (0, 0, 255), 2)
-                st.image(annotated, caption="Deep Learning Extracted Debris Vectors (Red)", use_container_width=True)
-            else:
-                st.error("Failed to decode image. Please ensure it is a valid JPG/PNG URL.")
-                detections = []
-        except Exception as e:
-            st.error(f"Error fetching or processing image: {e}")
+        if frame is not None:
+            detections, _ = detect_streaks(frame, min_length=streak_len)
+            annotated = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+            for d in detections:
+                if isinstance(d, dict) and 'start' in d and 'end' in d:
+                    cv2.line(annotated, d['start'], d['end'], (0, 0, 255), 2)
+            st.image(annotated, caption="Deep Learning Extracted Debris Vectors (Red)", use_container_width=True)
+        else:
+            st.error("Failed to load image data.")
             detections = []
 
     with col_opt2:
