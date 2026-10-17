@@ -101,7 +101,9 @@ with tab4:
         streak_len = st.slider("Min Streak Length (px)", 10, 200, 50)
         
         try:
-            resp = requests.get(img_url, timeout=10)
+            # FIX: Added User-Agent header to bypass 403 Forbidden errors
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            resp = requests.get(img_url, headers=headers, timeout=15)
             resp.raise_for_status()
             img_array = np.asarray(bytearray(resp.content), dtype=np.uint8)
             frame = cv2.imdecode(img_array, cv2.IMREAD_GRAYSCALE)
