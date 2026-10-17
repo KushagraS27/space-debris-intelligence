@@ -1,4 +1,7 @@
-﻿import streamlit as st
+﻿import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
+import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -108,3 +111,4 @@ with tab4:
             st.success("Association Status: High angular velocity streak detected. Candidate matched for tracklet prioritization.")
         else:
             st.warning("No streaks matched current length threshold.")
+
