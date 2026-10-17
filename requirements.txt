@@ -1,5 +1,8 @@
-requests>=2.32
-pandas>=2.3
-pydantic>=2.12
-pytest>=8.3
-sgp4>=2.25
+﻿requests
+pandas
+plotly
+scikit-learn
+tensorflow-cpu
+opencv-python-headless
+sgp4
+streamlit
