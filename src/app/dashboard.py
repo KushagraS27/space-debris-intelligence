@@ -22,10 +22,21 @@ data = pd.read_csv(data_path)
 class_map = {0: "Payload", 1: "Rocket Body", 2: "Known Debris", 3: "Foreign/Unknown"}
 data['classification_label'] = data['object_classification'].map(class_map)
 
+# --- GLOBAL SIDEBAR FILTER ---
+st.sidebar.header("🔍 Filter Candidates")
+selected_classes = st.sidebar.multiselect(
+    "Filter by Debris Classification",
+    options=["Payload", "Rocket Body", "Known Debris", "Foreign/Unknown"],
+    default=["Payload", "Rocket Body", "Known Debris", "Foreign/Unknown"]
+)
+
+# Apply the filter to the data
+filtered_data = data[data['classification_label'].isin(selected_classes)]
+
 col1, col2, col3 = st.columns(3)
-col1.metric("Total Encounters Screened", len(data))
-col2.metric("Critical Consensus Anomalies", len(data[data['anomaly_consensus'] == 3]))
-col3.metric("Foreign/Unknown Tracked", len(data[data['object_classification'] == 3]))
+col1.metric("Total Encounters Displayed", len(filtered_data))
+col2.metric("Critical Consensus Anomalies", len(filtered_data[filtered_data['anomaly_consensus'] == 3]))
+col3.metric("Foreign/Unknown Tracked", len(filtered_data[filtered_data['object_classification'] == 3]))
 
 st.divider()
 
@@ -38,21 +49,41 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 ])
 
 with tab1:
-    fig_3d = px.scatter_3d(data, x='encounter_x', y='encounter_y', z='encounter_z', color='anomaly_consensus', hover_name='obj_b', hover_data=['miss_distance_km', 'classification_label'], color_continuous_scale="Reds")
-    fig_3d.update_traces(marker=dict(size=4, opacity=0.7))
-    st.plotly_chart(fig_3d, use_container_width=True)
+    if not filtered_data.empty:
+        fig_3d = px.scatter_3d(filtered_data, x='encounter_x', y='encounter_y', z='encounter_z', color='anomaly_consensus', hover_name='obj_b', hover_data=['miss_distance_km', 'classification_label'], color_continuous_scale="Reds")
+        fig_3d.update_traces(marker=dict(size=4, opacity=0.7))
+        st.plotly_chart(fig_3d, use_container_width=True)
+    else:
+        st.warning("No data matches the selected classification filters.")
 
 with tab2:
     cols = st.columns(2)
     with cols[0]:
-        st.dataframe(data[['obj_a', 'obj_b', 'iforest_anomaly', 'svm_anomaly', 'lof_anomaly', 'anomaly_consensus']].sort_values('anomaly_consensus', ascending=False).head(15), use_container_width=True)
+        st.dataframe(filtered_data[['obj_a', 'obj_b', 'iforest_anomaly', 'svm_anomaly', 'lof_anomaly', 'anomaly_consensus']].sort_values('anomaly_consensus', ascending=False).head(15), use_container_width=True)
     with cols[1]:
-        fig_vel = px.scatter(data, x="time_to_approach_hours", y="relative_velocity_kms", color="anomaly_consensus", size="miss_distance_km", hover_data=["classification_label"], color_continuous_scale="Viridis")
-        st.plotly_chart(fig_vel, use_container_width=True)
+        if not filtered_data.empty:
+            fig_vel = px.scatter(filtered_data, x="time_to_approach_hours", y="relative_velocity_kms", color="anomaly_consensus", size="miss_distance_km", hover_data=["classification_label"], color_continuous_scale="Viridis")
+            st.plotly_chart(fig_vel, use_container_width=True)
 
 with tab3:
-    fig_box = px.box(data, x="classification_label", y="data_age_hours", color="classification_label")
-    st.plotly_chart(fig_box, use_container_width=True)
+    st.subheader("Debris Classification Breakdown")
+    
+    # --- NEW: Classification Pie Chart and Table ---
+    pie_col, box_col = st.columns(2)
+    with pie_col:
+        class_counts = filtered_data['classification_label'].value_counts().reset_index()
+        class_counts.columns = ['Classification', 'Count']
+        if not class_counts.empty:
+            fig_pie = px.pie(class_counts, names='Classification', values='Count', title="Distribution of Tracked Objects", hole=0.4, color='Classification')
+            st.plotly_chart(fig_pie, use_container_width=True)
+        
+    with box_col:
+        if not filtered_data.empty:
+            fig_box = px.box(filtered_data, x="classification_label", y="data_age_hours", color="classification_label", title="Data Age Degradation by Object Type")
+            st.plotly_chart(fig_box, use_container_width=True)
+            
+    st.markdown("#### Classified Encounter Table")
+    st.dataframe(filtered_data[['obj_a', 'obj_b', 'classification_label', 'miss_distance_km', 'time_to_approach_hours', 'anomaly_consensus']].sort_values('anomaly_consensus', ascending=False), use_container_width=True)
 
 with tab4:
     col_opt1, col_opt2 = st.columns(2)
@@ -76,15 +107,10 @@ with tab5:
     st.subheader("Formal Research Evaluation")
     
     st.markdown("#### 1. Telescope Observing-Time Budget Simulation")
-    st.write("Simulates a ground telescope scheduling the highest-priority targets under a strict time budget (assuming 15 mins per observation).")
-    
     budget_hours = st.slider("Nightly Telescope Budget (Hours)", min_value=1.0, max_value=12.0, value=4.0, step=0.5)
     slots = int((budget_hours * 60) // 15)
     
-    # Baseline: Nearest objects first
     b_queue = data.sort_values("miss_distance_km", ascending=True).head(slots)
-    
-    # ML Triage: Consensus + velocity weight
     data["triage_rank"] = (data["anomaly_consensus"] * 100.0) + data["relative_velocity_kms"] - (data["miss_distance_km"] / 1000.0)
     m_queue = data.sort_values("triage_rank", ascending=False).head(slots)
     
@@ -92,7 +118,7 @@ with tab5:
     m_crit = len(m_queue[(m_queue["object_classification"] == 3) | (m_queue["anomaly_consensus"] == 3)])
     
     col_s1, col_s2 = st.columns(2)
-    col_s1.metric("Anomalies Caught (Distance-Only Baseline)", f"{b_crit} / {slots}")
+    col_s1.metric("Anomalies Caught (Distance-Only)", f"{b_crit} / {slots}")
     col_s2.metric("Anomalies Caught (ML Ensemble)", f"{m_crit} / {slots}", delta=f"+{m_crit - b_crit} over baseline")
     
     st.markdown("---")
