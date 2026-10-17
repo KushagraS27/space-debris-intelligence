@@ -132,7 +132,7 @@ with tab6:
     if 'adr_priority_score' in filtered_data.columns:
         adr_cols = [c for c in ['obj_a', 'obj_b', 'classification_label', 'miss_distance_km', 'adr_rf_score', 'adr_gb_score', 'adr_priority_score'] if c in filtered_data.columns]
         adr_data = filtered_data[adr_cols].sort_values('adr_priority_score', ascending=False)
-        st.dataframe(adr_data.style.background_gradient(subset=['adr_priority_score'], cmap='Reds'), use_container_width=True)
+        st.dataframe(adr_data, use_container_width=True)
         st.info("Model Comparison: Random Forest and Gradient Boosting regressors independently weigh mass proxies and collision risk.")
     else:
         st.warning("No ADR scores found in data. Please run the main pipeline.")
