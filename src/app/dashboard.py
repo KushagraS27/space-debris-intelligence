@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import cv2
+import requests
 from src.optical.detect_streaks import detect_streaks
 
 st.set_page_config(page_title="Advanced Space Debris Intelligence", layout="wide")
@@ -69,8 +70,6 @@ with tab2:
         if exist_cols:
             sort_c = 'anomaly_consensus' if 'anomaly_consensus' in exist_cols else exist_cols[-1]
             st.dataframe(filtered_data[exist_cols].sort_values(sort_c, ascending=False).head(15), use_container_width=True)
-        else:
-            st.write("ML columns not found.")
     with cols[1]:
         if not filtered_data.empty and anomaly_col and 'relative_velocity_kms' in filtered_data.columns:
             fig_vel = px.scatter(filtered_data, x="time_to_approach_hours", y="relative_velocity_kms", color=anomaly_col, size="miss_distance_km", hover_data=["classification_label"], color_continuous_scale="Viridis")
@@ -95,20 +94,36 @@ with tab3:
     st.dataframe(filtered_data[exist_base], use_container_width=True)
 
 with tab4:
-    col_opt1, col_opt2 = st.columns(2)
+    st.subheader("Live Internet Telescope Feed Analysis")
+    col_opt1, col_opt2 = st.columns([2, 1])
     with col_opt1:
-        streak_len = st.slider("Min Streak Length (px)", 10, 150, 35)
-        frame = np.zeros((512, 512), dtype=np.uint8)
-        cv2.line(frame, (80, 120), (340, 380), 255, 2)
-        detections, _ = detect_streaks(frame, min_length=streak_len)
-        annotated = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
-        for d in detections:
-            if isinstance(d, dict) and 'start' in d and 'end' in d:
-                cv2.line(annotated, d['start'], d['end'], (0, 0, 255), 2)
-        st.image(annotated, caption="Extracted Debris Vector", use_container_width=True)
+        img_url = st.text_input("Enter Astronomical Image URL (.jpg or .png):", "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Starlink_Trails_over_the_Uruguayan_sky.jpg/800px-Starlink_Trails_over_the_Uruguayan_sky.jpg")
+        streak_len = st.slider("Min Streak Length (px)", 10, 200, 50)
+        
+        try:
+            resp = requests.get(img_url, timeout=10)
+            resp.raise_for_status()
+            img_array = np.asarray(bytearray(resp.content), dtype=np.uint8)
+            frame = cv2.imdecode(img_array, cv2.IMREAD_GRAYSCALE)
+            
+            if frame is not None:
+                detections, _ = detect_streaks(frame, min_length=streak_len)
+                annotated = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+                for d in detections:
+                    if isinstance(d, dict) and 'start' in d and 'end' in d:
+                        cv2.line(annotated, d['start'], d['end'], (0, 0, 255), 2)
+                st.image(annotated, caption="Deep Learning Extracted Debris Vectors (Red)", use_container_width=True)
+            else:
+                st.error("Failed to decode image. Please ensure it is a valid JPG/PNG URL.")
+                detections = []
+        except Exception as e:
+            st.error(f"Error fetching or processing image: {e}")
+            detections = []
+
     with col_opt2:
-        st.write(f"**Detected Candidate Streaks:** `{len(detections)}`")
-        if detections: st.dataframe(pd.DataFrame(detections), use_container_width=True)
+        st.write(f"**Detected Candidate Streaks:** `{len(detections) if 'detections' in locals() else 0}`")
+        if 'detections' in locals() and detections: 
+            st.dataframe(pd.DataFrame(detections), use_container_width=True)
 
 with tab5:
     st.subheader("Formal Research Evaluation")
