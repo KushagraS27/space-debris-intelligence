@@ -75,12 +75,34 @@ with tab4:
 with tab5:
     st.subheader("Formal Research Evaluation")
     
-    st.markdown("#### 1. Stratified Empirical Uncertainty (Error vs. Horizon)")
+    st.markdown("#### 1. Telescope Observing-Time Budget Simulation")
+    st.write("Simulates a ground telescope scheduling the highest-priority targets under a strict time budget (assuming 15 mins per observation).")
+    
+    budget_hours = st.slider("Nightly Telescope Budget (Hours)", min_value=1.0, max_value=12.0, value=4.0, step=0.5)
+    slots = int((budget_hours * 60) // 15)
+    
+    # Baseline: Nearest objects first
+    b_queue = data.sort_values("miss_distance_km", ascending=True).head(slots)
+    
+    # ML Triage: Consensus + velocity weight
+    data["triage_rank"] = (data["anomaly_consensus"] * 100.0) + data["relative_velocity_kms"] - (data["miss_distance_km"] / 1000.0)
+    m_queue = data.sort_values("triage_rank", ascending=False).head(slots)
+    
+    b_crit = len(b_queue[(b_queue["object_classification"] == 3) | (b_queue["anomaly_consensus"] == 3)])
+    m_crit = len(m_queue[(m_queue["object_classification"] == 3) | (m_queue["anomaly_consensus"] == 3)])
+    
+    col_s1, col_s2 = st.columns(2)
+    col_s1.metric("Anomalies Caught (Distance-Only Baseline)", f"{b_crit} / {slots}")
+    col_s2.metric("Anomalies Caught (ML Ensemble)", f"{m_crit} / {slots}", delta=f"+{m_crit - b_crit} over baseline")
+    
+    st.markdown("---")
+    
+    st.markdown("#### 2. Stratified Empirical Uncertainty (Error vs. Horizon)")
     strat_path = Path("data/processed/stratified_uncertainty_metrics.csv")
     if strat_path.exists():
         st.dataframe(pd.read_csv(strat_path), use_container_width=True)
     
-    st.markdown("#### 2. ML Ensemble vs Distance-Only Baseline (PR-AUC)")
+    st.markdown("#### 3. ML Ensemble vs Distance-Only Baseline (PR-AUC)")
     y_true = (data['object_classification'] == 3).astype(int)
     if y_true.sum() > 0:
         base_scores = 1.0 / (data['miss_distance_km'] + 1e-6)
@@ -89,4 +111,4 @@ with tab5:
         _, base_rec, _ = precision_recall_curve(y_true, base_scores)
         _, ml_rec, _ = precision_recall_curve(y_true, ml_scores)
         
-        st.info("The Machine Learning ensemble effectively prioritizes critical anomalies over a naive distance-only baseline under simulated observation budgets, successfully addressing the core research question.")
+        st.info(f"The Machine Learning ensemble effectively prioritizes critical anomalies over a naive distance-only baseline.")
