@@ -13,6 +13,16 @@ from src.optical.detect_streaks import detect_streaks
 st.set_page_config(page_title="Advanced Space Debris Intelligence", layout="wide")
 st.title("🌌 Space Debris Intelligence: Advanced ML & Optical Tracking")
 
+from src.fetch_gp import fetch_live_data
+from src.main import run_pipeline
+
+if st.sidebar.button("Refresh live data"):
+    with st.spinner("Fetching from CelesTrak and re-running pipeline..."):
+        fetch_live_data()
+        run_pipeline()
+    st.cache_data.clear()
+    st.rerun()
+
 data_path = Path("data/processed/scored_candidates.csv")
 if not data_path.exists():
     st.warning("No data found. Please run the pipeline first.")
