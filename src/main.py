@@ -40,14 +40,16 @@ def run_pipeline():
                 res = screen_pair(a, b, start_time, end_time, coarse_step_seconds=600)
                 if res.coarse_min_separation_km < 15000.0:
                     obj_type = b.get('OBJECT_TYPE', 'DEBRIS')
-                    if obj_type == 'PAYLOAD':
-                        cls_val = 0
-                    elif obj_type == 'ROCKET BODY':
-                        cls_val = 1
-                    elif obj_type == 'DEBRIS':
-                        cls_val = 2
+                    name = str(b.get("OBJECT_NAME", "")).upper()
+                    if "R/B" in name:
+                        cls_val = 1      # rocket body
+                    elif " DEB" in name:
+                        cls_val = 2      # debris
+                    elif "TBA" in name or name == "":
+                        cls_val = 3      # unknown / unassigned
                     else:
-                        cls_val = 3
+                        cls_val = 0      # payload (satellite)
+                    
 
                     # Real data age: hours since this object's orbit record (EPOCH)
                     try:
