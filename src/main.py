@@ -1,9 +1,10 @@
-﻿import json
+import json
 import pandas as pd
 import numpy as np
+from math import sqrt
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
-from src.orbits.screen import screen_pair
+from src.orbits.screen import screen_pair, relative_velocity_km_s
 from src.analysis.triage import score_candidates
 
 def run_pipeline():
@@ -41,21 +42,50 @@ def run_pipeline():
                     elif obj_type == 'ROCKET BODY': cls_val = 1
                     elif obj_type == 'DEBRIS': cls_val = 2
                     else: cls_val = 3
-                    
+
+                    # Inject ~15% as Foreign/Unknown for evaluation
                     if np.random.rand() < 0.15:
                         cls_val = 3
+
+                    # --- Derive features from real orbital mechanics ---
+                    # Relative velocity from actual SGP4 states at closest approach
+                    rel_vel = relative_velocity_km_s(
+                        res.velocity_a_km_s, res.velocity_b_km_s
+                    )
+
+                    # Data age from the secondary object's epoch
+                    epoch_str = b.get('EPOCH', '')
+                    try:
+                        epoch_dt = datetime.fromisoformat(
+                            epoch_str.replace('Z', '+00:00')
+                        )
+                        if epoch_dt.tzinfo is None:
+                            epoch_dt = epoch_dt.replace(tzinfo=timezone.utc)
+                        data_age = abs(
+                            (start_time - epoch_dt).total_seconds() / 3600.0
+                        )
+                    except (ValueError, TypeError):
+                        data_age = 24.0  # Fallback for unparseable epochs
+
+                    # Encounter position from actual propagated midpoint
+                    enc_x = (res.position_a_km[0] + res.position_b_km[0]) / 2.0
+                    enc_y = (res.position_a_km[1] + res.position_b_km[1]) / 2.0
+                    enc_z = (res.position_a_km[2] + res.position_b_km[2]) / 2.0
 
                     candidates.append({
                         "obj_a": res.object_a_id,
                         "obj_b": res.object_b_id,
                         "miss_distance_km": float(res.coarse_min_separation_km),
-                        "time_to_approach_hours": float((res.closest_time_utc - start_time).total_seconds() / 3600.0),
-                        "data_age_hours": float(np.random.uniform(0.5, 48) if cls_val != 3 else np.random.uniform(100, 400)),
-                        "relative_velocity_kms": float(np.random.normal(10.0, 2.0) if cls_val != 3 else np.random.normal(14.0, 3.0)),
+                        "time_to_approach_hours": float(
+                            (res.closest_time_utc - start_time).total_seconds()
+                            / 3600.0
+                        ),
+                        "data_age_hours": float(data_age),
+                        "relative_velocity_kms": float(rel_vel),
                         "object_classification": int(cls_val),
-                        "encounter_x": float(np.random.uniform(-7000, 7000)),
-                        "encounter_y": float(np.random.uniform(-7000, 7000)),
-                        "encounter_z": float(np.random.uniform(-7000, 7000))
+                        "encounter_x": float(enc_x),
+                        "encounter_y": float(enc_y),
+                        "encounter_z": float(enc_z),
                     })
             except Exception:
                 continue
