@@ -408,37 +408,43 @@ with tab_sim:
     ellipse_x = deb_x + ellipse_x_unrot * np.cos(rad) - ellipse_y_unrot * np.sin(rad)
     ellipse_y = deb_y + ellipse_x_unrot * np.sin(rad) + ellipse_y_unrot * np.cos(rad)
 
-    # Calculate approach trajectory animation path (debris moving toward closest approach point)
-    n_frames = 25
-    traj_alpha = np.linspace(2.5, 0.0, n_frames)  # approaching from distance down to closest approach
+    # Calculate complete approach and flyby trajectory animation (approaching, closest approach, and flying away)
+    n_frames = 60
+    # Trajectory parameter: starts far out at +3.5, passes closest approach at 0.0, and continues past at -2.5
+    traj_alpha = np.linspace(3.5, -2.5, n_frames)
+    
+    # Pre-calculated normal vector for true orthogonal closest separation
+    ortho_rad = rad + np.pi / 2.0
     
     frames = []
     for f_idx, alpha in enumerate(traj_alpha):
-        # Position of debris along incoming orbital track
-        curr_deb_x = deb_x + alpha * 1.5 * np.cos(rad)
-        curr_deb_y = deb_y + alpha * 1.5 * np.sin(rad)
+        # Full hyperbolic / linear encounter track in relative coordinate frame
+        curr_deb_x = deb_x + alpha * np.cos(rad)
+        curr_deb_y = deb_y + alpha * np.sin(rad)
         
-        # Moving covariance bubble centered on moving debris
+        # Moving covariance error ellipse centered on debris
         curr_el_x = curr_deb_x + ellipse_x_unrot * np.cos(rad) - ellipse_y_unrot * np.sin(rad)
         curr_el_y = curr_deb_y + ellipse_x_unrot * np.sin(rad) + ellipse_y_unrot * np.cos(rad)
+        
+        curr_dist = float(np.hypot(curr_deb_x, curr_deb_y))
 
         frames.append(go.Frame(
             data=[
-                # Trace 0: Covariance bubble
+                # Trace 0: Moving Covariance bubble
                 go.Scatter(x=curr_el_x, y=curr_el_y),
-                # Trace 1: Keep out
+                # Trace 1: Static keep-out
                 go.Scatter(x=0.50 * np.cos(theta), y=0.50 * np.sin(theta)),
-                # Trace 2: Flight vector
+                # Trace 2: Orbit Path Vector
                 go.Scatter(),
-                # Trace 3: Distance line
+                # Trace 3: Dynamic Distance Vector from satellite to debris
                 go.Scatter(x=[sat_x, curr_deb_x], y=[sat_y, curr_deb_y]),
                 # Trace 4: Satellite marker
                 go.Scatter(x=[sat_x], y=[sat_y]),
-                # Trace 5: Debris marker
+                # Trace 5: Debris marker with live distance readout
                 go.Scatter(
                     x=[curr_deb_x],
                     y=[curr_deb_y],
-                    text=[f"Approaching Space Debris Target (Distance: {np.hypot(curr_deb_x, curr_deb_y):.2f} km)"],
+                    text=[f"Space Debris Target (Real-Time Range: {curr_dist:.2f} Kilometers)"],
                 ),
             ],
             name=f"frame_{f_idx}",
@@ -504,9 +510,9 @@ with tab_sim:
         name="Space Debris Target",
     ))
 
-    x_max = max(4.0, float(sim_miss + a_axis + 2.5))
+    x_max = max(5.0, float(sim_miss + a_axis + 4.0))
     fig_sim.update_layout(
-        height=560,
+        height=580,
         showlegend=True,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="#0c1122",
@@ -532,7 +538,7 @@ with tab_sim:
                 dict(
                     label="▶ Run Simulation",
                     method="animate",
-                    args=[None, dict(frame=dict(duration=80, redraw=True), fromcurrent=True, mode="immediate", transition=dict(duration=40))],
+                    args=[None, dict(frame=dict(duration=60, redraw=True), fromcurrent=True, mode="immediate", transition=dict(duration=20))],
                 ),
                 dict(
                     label="⏸ Pause Simulation",
@@ -543,14 +549,14 @@ with tab_sim:
         )],
         xaxis=dict(
             title="In-Track Coordinate Plane (Kilometers)",
-            range=[-x_max * 0.5, x_max * 1.1],
+            range=[-x_max * 0.6, x_max * 1.2],
             gridcolor="#1b2440",
             zerolinecolor="#334155",
             zerolinewidth=1.5,
         ),
         yaxis=dict(
             title="Cross-Track Coordinate Plane (Kilometers)",
-            range=[-x_max * 0.5, x_max * 0.9],
+            range=[-x_max * 0.6, x_max * 1.0],
             gridcolor="#1b2440",
             zerolinecolor="#334155",
             zerolinewidth=1.5,
