@@ -418,16 +418,26 @@ with tab_sim:
             name="Debris Center",
         ))
 
-        max_limit = max(4.0, sim_miss + a_axis + 1.0)
+        max_limit = max(4.0, float(sim_miss + a_axis + 1.0))
         fig_sim.update_layout(
             title="Conjunction Encounter Plane (True Scale)",
-            xaxis_title="Relative In-Track (km)",
-            yaxis_title="Relative Cross-Track (km)",
             height=430,
             showlegend=True,
-            **DARK_LAYOUT,
-            xaxis=dict(range=[-max_limit * 0.6, max_limit], gridcolor="#1b2440", zerolinecolor="#334155"),
-            yaxis=dict(range=[-max_limit * 0.7, max_limit * 0.7], gridcolor="#1b2440", zerolinecolor="#334155"),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="#0c1122",
+            font=dict(family="Inter", color="#cbd5e1"),
+            xaxis=dict(
+                title="Relative In-Track (km)",
+                range=[-max_limit * 0.6, max_limit],
+                gridcolor="#1b2440",
+                zerolinecolor="#334155",
+            ),
+            yaxis=dict(
+                title="Relative Cross-Track (km)",
+                range=[-max_limit * 0.7, max_limit * 0.7],
+                gridcolor="#1b2440",
+                zerolinecolor="#334155",
+            ),
         )
         st.plotly_chart(fig_sim, use_container_width=True)
 
