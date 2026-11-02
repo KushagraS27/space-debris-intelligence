@@ -16,142 +16,126 @@ from src.orbits.conjunction_risk import (
 )
 
 # ------------------------------------------------------------------ #
-# 🛰️ Page Configuration & Modern Light Theme CSS                     #
+# 🌌 Page Configuration & Space Dark Theme Styling                   #
 # ------------------------------------------------------------------ #
 st.set_page_config(
-    page_title="OrbitGuard: Space Debris Intelligence",
+    page_title="Space Debris Intelligence",
     page_icon="🛰️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-LIGHT_CSS = """
+SPACE_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root {
-    --bg-primary: #f8fafc;
-    --bg-card: #ffffff;
-    --border-color: #e2e8f0;
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --accent-blue: #2563eb;
-    --accent-cyan: #0284c7;
-    --accent-emerald: #059669;
-    --accent-rose: #e11d48;
-    --accent-amber: #d97706;
+    --bg-primary:   #080b14;
+    --bg-secondary: #0e1322;
+    --bg-card:      #141b2f;
+    --accent-cyan:  #00f0ff;
+    --accent-blue:  #3b82f6;
+    --accent-purple:#8b5cf6;
+    --accent-rose:  #f43f5e;
+    --accent-amber: #f59e0b;
+    --accent-green: #10b981;
+    --text-primary: #e2e8f0;
+    --text-muted:   #94a3b8;
+    --border-dim:   rgba(0, 240, 255, 0.15);
 }
 
 .stApp {
-    background-color: var(--bg-primary);
+    background: radial-gradient(circle at 50% 10%, #111a33 0%, #080b14 75%);
     color: var(--text-primary);
     font-family: 'Inter', sans-serif;
 }
 
 /* Sidebar */
 section[data-testid="stSidebar"] {
-    background-color: #ffffff !important;
-    border-right: 1px solid var(--border-color) !important;
+    background-color: #0b0f1d !important;
+    border-right: 1px solid var(--border-dim) !important;
 }
 
 /* Metric Cards */
 div[data-testid="stMetric"] {
-    background: #ffffff !important;
-    border: 1px solid var(--border-color) !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-dim) !important;
     border-radius: 14px !important;
-    padding: 18px 22px !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.06) !important;
+    padding: 16px 20px !important;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.08) !important;
 }
 div[data-testid="stMetric"] label {
-    color: var(--text-secondary) !important;
-    font-size: 0.85rem !important;
+    color: var(--text-muted) !important;
+    font-size: 0.82rem !important;
     font-weight: 600 !important;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
 }
 div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
-    color: var(--accent-blue) !important;
-    font-weight: 800 !important;
-    font-family: 'JetBrains Mono', monospace !important;
+    color: var(--accent-cyan) !important;
+    font-weight: 700 !important;
+    font-family: 'Orbitron', sans-serif !important;
 }
 
-/* Tabs */
+/* Tab Headers */
 .stTabs [data-baseweb="tab-list"] {
-    background-color: #f1f5f9;
+    background-color: var(--bg-secondary);
     border-radius: 12px;
-    padding: 6px;
+    padding: 5px;
     gap: 6px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-dim);
 }
 .stTabs [data-baseweb="tab"] {
     border-radius: 8px;
-    color: var(--text-secondary) !important;
+    color: var(--text-muted) !important;
     font-weight: 600;
     padding: 8px 18px;
     transition: all 0.2s ease;
 }
 .stTabs [aria-selected="true"] {
-    background-color: #ffffff !important;
-    color: var(--accent-blue) !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background-color: rgba(0, 240, 255, 0.12) !important;
+    color: var(--accent-cyan) !important;
+    border-bottom: 2px solid var(--accent-cyan) !important;
 }
 
-/* Callout banner */
-.problem-card {
-    background: #ffffff;
-    border-left: 5px solid #2563eb;
+/* Problem & Narrative Cards */
+.problem-box {
+    background: linear-gradient(135deg, rgba(20, 27, 47, 0.8) 0%, rgba(14, 19, 34, 0.9) 100%);
+    border-left: 4px solid var(--accent-cyan);
     border-radius: 12px;
-    padding: 16px 20px;
-    border-top: 1px solid var(--border-color);
-    border-right: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color);
+    padding: 18px 22px;
+    border-top: 1px solid var(--border-dim);
+    border-right: 1px solid var(--border-dim);
+    border-bottom: 1px solid var(--border-dim);
     margin-bottom: 20px;
-}
-.badge-danger {
-    background-color: #ffe4e6;
-    color: #e11d48;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 0.8rem;
-}
-.badge-safe {
-    background-color: #d1fae5;
-    color: #059669;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 0.8rem;
 }
 </style>
 """
-st.markdown(LIGHT_CSS, unsafe_allow_html=True)
+st.markdown(SPACE_CSS, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------ #
-# Header & Navigation                                                  #
+# Title Header                                                         #
 # ------------------------------------------------------------------ #
-col_title, col_status = st.columns([3, 1])
+col_title, col_badge = st.columns([3, 1])
 with col_title:
-    st.markdown("## 🛰️ OrbitGuard: Conjunction Risk & Fuel Optimization Engine")
-    st.markdown(
-        "**Smart Risk Filter for Small Satellites** · NASA 2D Gaussian $P_c$ · TLE Age Error Ellipse · False Alarm Fatigue Suppression"
-    )
+    st.markdown("<h1 style='font-family: Orbitron; letter-spacing: 1.5px; margin-bottom: 0;'>🛰️ SPACE DEBRIS INTELLIGENCE</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.95rem; margin-top: 4px;'><b>Conjunction Risk & Fuel Optimization Engine</b> · NASA 2D Gaussian $P_c$ · TLE Age Uncertainty Filter · Optical Streak Detection</p>", unsafe_allow_html=True)
 
-with col_status:
+with col_badge:
     st.markdown(
         """
-        <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 10px; text-align: center;">
-            <span style="color: #059669; font-weight: bold; font-size: 0.85rem;">● SOCRATES Engine Active</span><br/>
-            <span style="color: #64748b; font-size: 0.75rem;">FastAPI Backend Ready</span>
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 10px; padding: 10px; text-align: center;">
+            <span style="color: #10b981; font-weight: bold; font-family: JetBrains Mono; font-size: 0.85rem;">● SYSTEM OPERATIONAL</span><br/>
+            <span style="color: #94a3b8; font-size: 0.75rem;">FastAPI Backend Ready</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 # ------------------------------------------------------------------ #
-# Sidebar: Risk Threshold Controls                                     #
+# Sidebar: Threshold Controls                                          #
 # ------------------------------------------------------------------ #
-st.sidebar.markdown("### ⚙️ Engine Risk Controls")
+st.sidebar.markdown("### ⚙️ Engine Risk Parameters")
 max_tle_age = st.sidebar.slider(
     "Max Acceptable TLE Age (Days)",
     min_value=0.5,
@@ -162,12 +146,12 @@ max_tle_age = st.sidebar.slider(
 )
 
 pc_exp = st.sidebar.slider(
-    "Critical Collision Probability Threshold log10(Pc)",
+    "Critical Collision Threshold log10(Pc)",
     min_value=-5.0,
     max_value=-2.0,
     value=-4.0,
     step=0.2,
-    help="Standard NASA collision threshold is 1e-4 (0.0001).",
+    help="Standard NASA collision avoidance threshold is 1e-4.",
 )
 pc_threshold = 10 ** pc_exp
 
@@ -177,14 +161,14 @@ fuel_cost_usd = st.sidebar.slider(
     max_value=3000,
     value=800,
     step=100,
-    help="Average propellant depletion & operational overhead per avoidance maneuver.",
+    help="Propellant & operational cost per orbital avoidance maneuver.",
 )
 
 st.sidebar.divider()
 st.sidebar.markdown(
     """
-    <div style="font-size: 0.8rem; color: #64748b;">
-        <strong>Backend Architecture:</strong><br/>
+    <div style="font-size: 0.8rem; color: #94a3b8; font-family: JetBrains Mono;">
+        <strong>Active API Endpoints:</strong><br/>
         • <code>/api/conjunction/calculate</code><br/>
         • <code>/api/conjunction/candidates</code><br/>
         • <code>/api/metrics/summary</code>
@@ -194,7 +178,7 @@ st.sidebar.markdown(
 )
 
 # ------------------------------------------------------------------ #
-# Load & Process Data with NASA 2D Gaussian Model                      #
+# Load & Process Screening Dataset                                     #
 # ------------------------------------------------------------------ #
 data_path = Path("data/processed/scored_candidates.csv")
 if not data_path.exists():
@@ -214,74 +198,83 @@ batch_summary = batch_evaluate_conjunctions(
 eval_df = pd.DataFrame(batch_summary["candidates"])
 
 # ------------------------------------------------------------------ #
-# Top-Level Executive Metrics                                          #
+# Executive Summary Metrics                                            #
 # ------------------------------------------------------------------ #
 m1, m2, m3, m4 = st.columns(4)
-m1.metric("Total Ingested Alerts", batch_summary["total_alerts"])
+m1.metric("Total Ingested Encounters", batch_summary["total_alerts"])
 m2.metric(
     "False Alarms Suppressed",
     f"{batch_summary['suppression_rate_pct']}%",
     delta=f"{batch_summary['false_alarms_suppressed']} alerts filtered",
 )
-m3.metric("Actionable Risks", batch_summary["actionable_alerts"])
+m3.metric("Actionable Risks (Real Danger)", batch_summary["actionable_alerts"])
 m4.metric(
-    "Estimated Fuel Dollars Saved",
+    "Est. Thruster Fuel Saved",
     f"${batch_summary['total_fuel_dollars_saved']:,.0f}",
     delta="Propellant Saved",
 )
 
 st.divider()
 
+# Plotly dark template helper
+DARK_LAYOUT = dict(
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="#0c1122",
+    font=dict(family="Inter", color="#cbd5e1"),
+    xaxis=dict(gridcolor="#1b2440"),
+    yaxis=dict(gridcolor="#1b2440"),
+)
+
 # ------------------------------------------------------------------ #
 # Main Tabs                                                            #
 # ------------------------------------------------------------------ #
 tab_problem, tab_sim, tab_table, tab_3d, tab_optical = st.tabs([
     "💡 Problem & Solution",
-    "🎯 Error Ellipse & NASA Pc Simulator",
-    "📋 Live Conjunction Feed & Actions",
+    "🎯 NASA Pc & Error Ellipse Simulator",
+    "📋 Conjunction Feed & Actions",
     "🗺️ 3D Encounter Map",
     "🔭 Optical Streak Analysis",
 ])
 
-# ── TAB 1: Problem & Solution (from Prompt / Screenshot) ──
+# ── TAB 1: Problem & Solution ──
 with tab_problem:
     st.markdown(
         """
-        <div class="problem-card">
-            <h3 style="color: #2563eb; margin-top: 0;">1. The Problem: "False Alarm" Fatigue</h3>
-            <p style="color: #334155; font-size: 0.95rem;">
+        <div class="problem-box">
+            <h3 style="color: #00f0ff; margin-top: 0; font-family: Orbitron;">1. The Problem: "False Alarm" Fatigue</h3>
+            <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6;">
                 When satellites orbit Earth, they get public warnings from CelesTrak about nearby space debris.
                 However, public data uses an old format called <strong>TLE (Two-Line Element)</strong>. TLE data gets inaccurate within 1 to 2 days.
                 Because traditional screening software panics over these huge error margins, 
-                <strong>over 95% of crash warnings are false alarms</strong>. Small satellite operators get flooded with alerts and don't know which ones are real.
+                <strong style="color: #f43f5e;">over 95% of crash warnings are false alarms</strong>. Satellite operators get flooded with alerts and don't know which ones are real.
             </p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    c_left, c_right = st.columns(2)
-    with c_left:
+    col_industry_left, col_industry_right = st.columns(2)
+    with col_industry_left:
         st.markdown(
             """
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; height: 100%;">
-                <h4 style="color: #0f172a; margin-top: 0;">🏢 How Big Companies Handle This</h4>
-                <p style="font-size: 0.85rem; color: #475569; font-weight: 600;">SpaceX, NASA, Large Defense</p>
-                <p style="color: #334155; font-size: 0.9rem;">
-                    They pay millions of dollars to private radar networks (like LeoLabs) or receive classified military tracking to know exact satellite positions. They can easily afford high-end tracking tools.
+            <div style="background: rgba(20, 27, 47, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; height: 100%;">
+                <h4 style="color: #3b82f6; margin-top: 0; font-family: Orbitron;">🏢 Big Companies (SpaceX, NASA)</h4>
+                <p style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;">High-Budget Defense & Mega-Constellations</p>
+                <p style="color: #cbd5e1; font-size: 0.9rem;">
+                    They pay millions of dollars to private radar networks (like LeoLabs) or get custom military tracking to know exact satellite positions. They can easily afford high-end tracking tools.
                 </p>
             </div>
             """,
             unsafe_allow_html=True,
         )
-    with c_right:
+    with col_industry_right:
         st.markdown(
             """
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; height: 100%;">
-                <h4 style="color: #0f172a; margin-top: 0;">🚀 Small Companies & Indian Startups</h4>
-                <p style="font-size: 0.85rem; color: #e11d48; font-weight: 600;">Budget Constrained Operators</p>
-                <p style="color: #334155; font-size: 0.9rem;">
-                    They cannot afford expensive radar subscriptions. They rely on free public CelesTrak data and calculate risks manually on spreadsheets, <strong>often burning precious satellite fuel on fake alarms</strong>.
+            <div style="background: rgba(20, 27, 47, 0.7); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 12px; padding: 20px; height: 100%;">
+                <h4 style="color: #f43f5e; margin-top: 0; font-family: Orbitron;">🚀 Small Companies & Indian Startups</h4>
+                <p style="font-size: 0.85rem; color: #f43f5e; font-weight: 600;">Budget-Constrained Commercial Fleets</p>
+                <p style="color: #cbd5e1; font-size: 0.9rem;">
+                    They cannot afford expensive radar subscriptions. They rely on free public CelesTrak data and calculate risks manually on spreadsheets, <strong style="color: #f59e0b;">often burning precious satellite fuel on fake alarms</strong>.
                 </p>
             </div>
             """,
@@ -291,30 +284,31 @@ with tab_problem:
     st.markdown("<br/>", unsafe_allow_html=True)
     st.markdown(
         """
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px;">
-            <h4 style="color: #166534; margin-top: 0;">🛡️ Our Solution: Smart Conjunction Risk Filter</h4>
-            <ul style="color: #14532d; font-size: 0.9rem; line-height: 1.7;">
-                <li><strong>TLE Age Penalty ($\sigma_{DSE}$):</strong> We calculate how old the CelesTrak data is. If data is 3 days old and distance is 1 km, our system marks it as a <em>False Alarm (High Uncertainty)</em>. If data is fresh and distance is close, it marks it as <em>Real Danger</em>.</li>
-                <li><strong>NASA Standard Formula:</strong> We use NASA's 2D Gaussian Covariance formula to calculate the true collision probability ($P_c$) mathematically instead of making simple distance guesses.</li>
-                <li><strong>Fuel Savings Metric:</strong> Shows satellite operators exact quantitative ROI: <em>Total Alerts Ingested</em>, <em>False Alarms Filtered Out</em>, and <em>Estimated Fuel Dollars Saved</em>.</li>
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 20px;">
+            <h4 style="color: #10b981; margin-top: 0; font-family: Orbitron;">🛡️ Our Solution & Advantages</h4>
+            <ul style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.8;">
+                <li><strong style="color: #00f0ff;">TLE Age Penalty (σ_DSE):</strong> We compute how old the tracking data is. If data is 3 days old and distance is 1 km, our system marks it as a <em>False Alarm (High Uncertainty)</em>. If data is fresh and distance is close, it flags an actionable <em>Real Danger</em>.</li>
+                <li><strong style="color: #00f0ff;">NASA Standard Formula:</strong> We apply NASA's 2D Gaussian Covariance formulation to calculate the true collision probability ($P_c$) mathematically instead of naive distance guessing.</li>
+                <li><strong style="color: #00f0ff;">Fuel Savings Metric:</strong> Directly quantifies operator ROI: <em>Total Alerts Ingested</em>, <em>False Alarms Filtered Out</em>, and <em>Estimated Fuel Dollars Saved</em>.</li>
             </ul>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-# ── TAB 2: Interactive Error Ellipse & NASA Pc Simulator ──
+# ── TAB 2: Corrected Simulator with Dual Interactive Models ──
 with tab_sim:
-    st.subheader("🎯 Orbital Conjunction & Covariance Error Ellipse Simulator")
-    st.caption("Inspect how aging TLE data artificially blows up covariance error bubbles, causing phantom collision warnings.")
+    st.subheader("🎯 High-Fidelity Conjunction & Error Ellipse Simulator")
+    st.caption("Adjust tracking age, miss distance, and approach trajectory to inspect the true physics of covariance bubble expansion.")
 
-    sim_col1, sim_col2 = st.columns([1, 1])
-    with sim_col1:
+    sim_c1, sim_c2 = st.columns([1, 1.2])
+    with sim_c1:
         sim_age = st.slider("Simulated TLE Age (Days Since Epoch)", 0.1, 7.0, 3.2, 0.1)
         sim_miss = st.slider("Simulated Miss Distance (km)", 0.05, 5.0, 1.20, 0.05)
+        sim_angle = st.slider("Relative Approach Angle (°)", 0, 180, 45, 5)
 
-        # Run single calculation
-        res = calculate_nasa_2d_gaussian_pc(
+        # Run mathematical model
+        sim_res = calculate_nasa_2d_gaussian_pc(
             miss_distance_km=sim_miss,
             tle_age_days=sim_age,
             max_tle_age_threshold=max_tle_age,
@@ -322,102 +316,120 @@ with tab_sim:
             fuel_cost_usd=fuel_cost_usd,
         )
 
+        badge_bg = "rgba(244, 63, 94, 0.15)" if not sim_res.is_false_alarm else "rgba(16, 185, 129, 0.15)"
+        badge_border = "rgba(244, 63, 94, 0.4)" if not sim_res.is_false_alarm else "rgba(16, 185, 129, 0.4)"
+        badge_text = "#f43f5e" if not sim_res.is_false_alarm else "#10b981"
+
         st.markdown(
             f"""
-            <div style="background: {'#fef2f2' if not res.is_false_alarm else '#f0fdf4'}; 
-                        border: 1px solid {'#fecaca' if not res.is_false_alarm else '#bbf7d0'}; 
-                        border-radius: 12px; padding: 16px; margin-top: 15px;">
-                <span style="font-size: 0.8rem; font-weight: bold; color: {'#e11d48' if not res.is_false_alarm else '#059669'};">
-                    ENGINE CLASSIFICATION: {res.classification}
+            <div style="background: {badge_bg}; border: 1px solid {badge_border}; border-radius: 12px; padding: 18px; margin-top: 15px;">
+                <span style="font-family: Orbitron; font-size: 0.82rem; font-weight: bold; color: {badge_text};">
+                    CLASSIFICATION: {sim_res.classification}
                 </span>
-                <h4 style="margin: 6px 0; color: {'#991b1b' if not res.is_false_alarm else '#166534'};">
-                    DECISION: {res.decision}
-                </h4>
-                <p style="font-size: 0.85rem; color: #334155; margin-bottom: 0;">
-                    {res.decision_reason}
+                <h3 style="margin: 6px 0; color: #ffffff; font-family: Orbitron;">
+                    RECOMMENDED: {sim_res.decision}
+                </h3>
+                <p style="font-size: 0.88rem; color: #cbd5e1; margin-bottom: 0;">
+                    {sim_res.decision_reason}
                 </p>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        # Formula Metrics Box
         st.markdown("<br/>", unsafe_allow_html=True)
-        c_m1, c_m2, c_m3 = st.columns(3)
-        c_m1.metric("Calculated Pc", res.raw_pc_exponential)
-        c_m2.metric("Covariance Sigma", f"{res.sigma_km} km")
-        c_m3.metric("Sigma Expansion", f"{res.sigma_expansion_ratio}x")
+        m_s1, m_s2, m_s3 = st.columns(3)
+        m_s1.metric("Calculated Pc", sim_res.raw_pc_exponential)
+        m_s2.metric("Positional Sigma", f"{sim_res.sigma_km} km")
+        m_s3.metric("Covariance Expansion", f"{sim_res.sigma_expansion_ratio}x")
 
-    with sim_col2:
-        # Plotly Covariance Error Ellipse Canvas
-        theta = np.linspace(0, 2 * np.pi, 200)
-        # Primary sat at origin (0, 0)
-        sat_x, sat_y = 0.0, 0.0
+    with sim_c2:
+        # High precision 2D orbital encounter plane visualization
+        rad = np.radians(sim_angle)
         
-        # Debris center placed at (miss_dist, 0)
-        deb_x = sim_miss
-        deb_y = 0.0
+        # Primary sat at center (0, 0)
+        sat_x, sat_y = 0.0, 0.0
 
-        # Covariance semi-major and semi-minor axis based on sigma
-        a = res.sigma_km * 1.5
-        b = res.sigma_km * 0.8
+        # Debris positioned by miss distance and approach angle
+        deb_x = sim_miss * np.cos(rad)
+        deb_y = sim_miss * np.sin(rad)
 
-        ellipse_x = deb_x + a * np.cos(theta)
-        ellipse_y = deb_y + b * np.sin(theta)
+        # Covariance Error Ellipse oriented along velocity vector
+        theta = np.linspace(0, 2 * np.pi, 200)
+        # In-track error is roughly 3x cross-track error in orbit determination
+        a_axis = sim_res.sigma_km * 2.2
+        b_axis = sim_res.sigma_km * 0.9
 
-        fig_ellipse = go.Figure()
+        # Rotated ellipse coordinates
+        ellipse_x_unrot = a_axis * np.cos(theta)
+        ellipse_y_unrot = b_axis * np.sin(theta)
+        
+        ellipse_x = deb_x + ellipse_x_unrot * np.cos(rad) - ellipse_y_unrot * np.sin(rad)
+        ellipse_y = deb_y + ellipse_x_unrot * np.sin(rad) + ellipse_y_unrot * np.cos(rad)
 
-        # Error Ellipse Area
-        fig_ellipse.add_trace(go.Scatter(
+        fig_sim = go.Figure()
+
+        # Error Bubble
+        fig_sim.add_trace(go.Scatter(
             x=ellipse_x, y=ellipse_y,
             fill='toself',
-            fillcolor='rgba(239, 68, 68, 0.15)' if not res.is_false_alarm else 'rgba(217, 119, 6, 0.15)',
-            line=dict(color='#e11d48' if not res.is_false_alarm else '#d97706', width=2, dash='dash'),
-            name=f"Covariance Bubble ({res.sigma_expansion_ratio}x σ)",
+            fillcolor='rgba(244, 63, 94, 0.2)' if not sim_res.is_false_alarm else 'rgba(245, 158, 11, 0.15)',
+            line=dict(color='#f43f5e' if not sim_res.is_false_alarm else '#f59e0b', width=2, dash='dash'),
+            name=f"Covariance Error Bubble ({sim_res.sigma_expansion_ratio}x σ)",
         ))
 
-        # Vector line
-        fig_ellipse.add_trace(go.Scatter(
+        # Satellite Safety Keep-Out Sphere (0.5 km)
+        keep_out_theta = np.linspace(0, 2 * np.pi, 100)
+        fig_sim.add_trace(go.Scatter(
+            x=0.5 * np.cos(keep_out_theta), y=0.5 * np.sin(keep_out_theta),
+            fill='toself',
+            fillcolor='rgba(0, 240, 255, 0.08)',
+            line=dict(color='#00f0ff', width=1.5, dash='dot'),
+            name="Satellite Safety Sphere (0.5 km)",
+        ))
+
+        # Miss Vector Line
+        fig_sim.add_trace(go.Scatter(
             x=[sat_x, deb_x], y=[sat_y, deb_y],
             mode='lines+text',
             text=["", f"d = {sim_miss:.2f} km"],
             textposition="top center",
-            line=dict(color='#0284c7', width=2, dash='dot'),
+            line=dict(color='#3b82f6', width=2),
             name="Encounter Miss Vector",
         ))
 
-        # Primary Sat Point
-        fig_ellipse.add_trace(go.Scatter(
+        # Primary Sat Marker
+        fig_sim.add_trace(go.Scatter(
             x=[sat_x], y=[sat_y],
             mode='markers+text',
-            marker=dict(size=14, color='#2563eb', symbol='circle'),
-            text=["Primary Satellite"],
+            marker=dict(size=14, color='#00f0ff', symbol='circle', line=dict(color='#ffffff', width=1)),
+            text=["Primary Sat"],
             textposition="bottom center",
             name="Primary Satellite",
         ))
 
-        # Debris Point
-        fig_ellipse.add_trace(go.Scatter(
+        # Debris Marker
+        fig_sim.add_trace(go.Scatter(
             x=[deb_x], y=[deb_y],
             mode='markers+text',
-            marker=dict(size=10, color='#e11d48', symbol='diamond'),
-            text=[f"Debris (DSE: {sim_age:.1f}d)"],
-            textposition="bottom center",
-            name="Debris Object",
+            marker=dict(size=11, color='#f43f5e', symbol='diamond', line=dict(color='#ffffff', width=1)),
+            text=[f"Debris ({sim_age:.1f}d)"],
+            textposition="top right",
+            name="Debris Center",
         ))
 
-        fig_ellipse.update_layout(
-            title="Conjunction Plane (Error Bubble Overlay)",
-            xaxis_title="Relative In-Plane (km)",
-            yaxis_title="Cross-Plane (km)",
-            paper_bgcolor="#ffffff",
-            plot_bgcolor="#f8fafc",
+        max_limit = max(4.0, sim_miss + a_axis + 1.0)
+        fig_sim.update_layout(
+            title="Conjunction Encounter Plane (True Scale)",
+            xaxis_title="Relative In-Track (km)",
+            yaxis_title="Relative Cross-Track (km)",
+            height=430,
             showlegend=True,
-            height=380,
-            xaxis=dict(range=[-1.0, max(5.0, sim_miss + a + 1.0)], zeroline=True, gridcolor="#e2e8f0"),
-            yaxis=dict(range=[-max(3.0, b + 1.0), max(3.0, b + 1.0)], zeroline=True, gridcolor="#e2e8f0"),
+            **DARK_LAYOUT,
+            xaxis=dict(range=[-max_limit * 0.6, max_limit], gridcolor="#1b2440", zerolinecolor="#334155"),
+            yaxis=dict(range=[-max_limit * 0.7, max_limit * 0.7], gridcolor="#1b2440", zerolinecolor="#334155"),
         )
-        st.plotly_chart(fig_ellipse, use_container_width=True)
+        st.plotly_chart(fig_sim, use_container_width=True)
 
 # ── TAB 3: Conjunction Feed & Operator Decisions ──
 with tab_table:
@@ -444,13 +456,13 @@ with tab_table:
     st.dataframe(
         display_df[exist_cols].rename(columns={
             "obj_a": "Primary Sat",
-            "obj_b": "Debris ID",
+            "obj_b": "Debris NORAD",
             "miss_distance_km": "Miss Dist (km)",
             "data_age_hours": "Data Age (h)",
             "raw_pc_exp": "Calculated Pc",
             "sigma_expansion": "Sigma Exp (x)",
-            "decision": "Action",
-            "decision_reason": "Decision Explanation",
+            "decision": "Recommended Action",
+            "decision_reason": "Operational Rationale",
         }),
         use_container_width=True,
         height=400,
@@ -464,40 +476,59 @@ with tab_3d:
             eval_df,
             x='encounter_x', y='encounter_y', z='encounter_z',
             color='is_false_alarm',
-            color_discrete_map={True: "#d97706", False: "#e11d48"},
+            color_discrete_map={True: "#f59e0b", False: "#f43f5e"},
             hover_name='obj_b',
             hover_data=['miss_distance_km', 'raw_pc_exp', 'decision'],
             title="Spatial Distribution of Conjunction Encounters",
         )
-        fig_3d.update_traces(marker=dict(size=4, opacity=0.8))
+        fig_3d.update_traces(marker=dict(size=4, opacity=0.85))
         fig_3d.update_layout(
-            paper_bgcolor="#ffffff",
-            plot_bgcolor="#f8fafc",
-            height=500,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="#0c1122",
+            height=520,
+            font=dict(color="#cbd5e1"),
         )
         st.plotly_chart(fig_3d, use_container_width=True)
 
-# ── TAB 5: Optical Streak Analysis ──
+# ── TAB 5: Corrected Optical Streak Analysis ──
 with tab_optical:
     st.subheader("🔭 Telescope Feed Optical Debris Detection")
-    st.caption("AutoEncoder-assisted background suppression and streak vectorization.")
+    st.caption("Directional linear filtering & vectorization detecting real satellite trains, tumbling fragments, and crossing tracks.")
+
     optical_dir = Path("data/optical_frames")
     available_images = list(optical_dir.glob("*.jpg")) + list(optical_dir.glob("*.png"))
 
-    if available_images:
-        selected_img = st.selectbox("Select Astronomical Image:", [img.name for img in available_images])
-        img_path = optical_dir / selected_img
-        frame = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
-    else:
-        st.info("Using simulated streak frame.")
-        frame = np.zeros((512, 512), dtype=np.uint8)
-        cv2.line(frame, (80, 120), (340, 380), 255, 2)
+    col_opt_ctrl1, col_opt_ctrl2 = st.columns([2, 1])
+    with col_opt_ctrl1:
+        selected_img_name = st.selectbox(
+            "Select Telescope Frame to Analyze (Real & Synthetic Library):",
+            [img.name for img in available_images],
+        )
+    with col_opt_ctrl2:
+        streak_len = st.slider("Min Streak Length (px)", 10, 150, 30)
 
-    streak_len = st.slider("Min Streak Length (px)", 10, 200, 50)
-    if frame is not None:
-        detections, _ = detect_streaks(frame, min_length=streak_len)
-        annotated = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
-        for d in detections:
-            if isinstance(d, dict) and 'start' in d and 'end' in d:
-                cv2.line(annotated, d['start'], d['end'], (225, 29, 72), 2)
-        st.image(annotated, caption="Extracted Debris Vectors (Red)", use_container_width=True)
+    if selected_img_name:
+        img_path = optical_dir / selected_img_name
+        frame = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
+
+        if frame is not None:
+            detections, mask = detect_streaks(frame, min_length=streak_len)
+
+            c_img1, c_img2 = st.columns(2)
+            with c_img1:
+                st.markdown("**Original Raw Frame**")
+                st.image(frame, use_container_width=True, caption=f"Input: {selected_img_name}")
+
+            with c_img2:
+                st.markdown(f"**Identified Debris Vectors: {len(detections)} Detected**")
+                annotated = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+                for d in detections:
+                    cv2.line(annotated, d['start'], d['end'], (0, 240, 255), 2)
+                    cv2.circle(annotated, d['start'], 3, (244, 63, 94), -1)
+                st.image(annotated, use_container_width=True, caption="Vector Overlay (Cyan = Streak, Red = Head)")
+
+            if detections:
+                st.markdown("##### Extracted Debris Streak Vectors")
+                st.dataframe(pd.DataFrame(detections), use_container_width=True)
+            else:
+                st.info("Clean sky detected: Zero debris streaks found in this observation window.")
