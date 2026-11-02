@@ -6,423 +6,498 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 import cv2
-from sklearn.metrics import precision_recall_curve, auc
+
 from src.optical.detect_streaks import detect_streaks
+from src.orbits.conjunction_risk import (
+    calculate_nasa_2d_gaussian_pc,
+    batch_evaluate_conjunctions,
+)
 
 # ------------------------------------------------------------------ #
-# 🌌 Space-Themed Page Configuration & Custom CSS                     #
+# 🛰️ Page Configuration & Modern Light Theme CSS                     #
 # ------------------------------------------------------------------ #
 st.set_page_config(
-    page_title="Space Debris Intelligence",
+    page_title="OrbitGuard: Space Debris Intelligence",
     page_icon="🛰️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-SPACE_CSS = """
+LIGHT_CSS = """
 <style>
-/* ── Import a sci-fi font ── */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Exo+2:wght@300;400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
-/* ── Root variables ── */
 :root {
-    --bg-primary:   #0b0d17;
-    --bg-secondary: #111527;
-    --bg-card:      #161a2e;
-    --accent-blue:  #00d4ff;
-    --accent-cyan:  #00f0ff;
-    --accent-purple:#7b61ff;
-    --text-primary: #e0e6ed;
-    --text-muted:   #8892a4;
-    --glow-blue:    0 0 15px rgba(0,212,255,0.3);
-    --glow-purple:  0 0 15px rgba(123,97,255,0.25);
-    --border-dim:   rgba(0,212,255,0.12);
+    --bg-primary: #f8fafc;
+    --bg-card: #ffffff;
+    --border-color: #e2e8f0;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --accent-blue: #2563eb;
+    --accent-cyan: #0284c7;
+    --accent-emerald: #059669;
+    --accent-rose: #e11d48;
+    --accent-amber: #d97706;
 }
 
-/* ── Global background ── */
 .stApp {
-    background: linear-gradient(170deg, #0b0d17 0%, #0f1123 40%, #151933 100%);
+    background-color: var(--bg-primary);
     color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
 }
 
-/* Starfield overlay (subtle CSS stars) */
-.stApp::before {
-    content: '';
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    pointer-events: none;
-    z-index: 0;
-    background-image:
-        radial-gradient(1px 1px at 10% 20%,  rgba(255,255,255,0.5) 50%, transparent 50%),
-        radial-gradient(1px 1px at 30% 65%,  rgba(255,255,255,0.4) 50%, transparent 50%),
-        radial-gradient(1px 1px at 55% 15%,  rgba(255,255,255,0.3) 50%, transparent 50%),
-        radial-gradient(1px 1px at 70% 80%,  rgba(255,255,255,0.35) 50%, transparent 50%),
-        radial-gradient(1px 1px at 85% 40%,  rgba(255,255,255,0.45) 50%, transparent 50%),
-        radial-gradient(2px 2px at 45% 50%,  rgba(0,212,255,0.25) 50%, transparent 50%),
-        radial-gradient(1px 1px at 92% 10%,  rgba(255,255,255,0.4) 50%, transparent 50%),
-        radial-gradient(1px 1px at 18% 90%,  rgba(255,255,255,0.3) 50%, transparent 50%),
-        radial-gradient(1px 1px at 60% 35%,  rgba(123,97,255,0.2) 50%, transparent 50%),
-        radial-gradient(1px 1px at 5% 55%,   rgba(255,255,255,0.3) 50%, transparent 50%);
-}
-
-/* ── Sidebar ── */
+/* Sidebar */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0d0f1e 0%, #141834 100%) !important;
-    border-right: 1px solid var(--border-dim);
-}
-section[data-testid="stSidebar"] .stMarkdown {
-    color: var(--text-primary) !important;
+    background-color: #ffffff !important;
+    border-right: 1px solid var(--border-color) !important;
 }
 
-/* ── Headers ── */
-h1, h2, h3 {
-    font-family: 'Orbitron', sans-serif !important;
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-h1 { letter-spacing: 2px; }
-
-/* ── Body text ── */
-p, li, span, label, .stMarkdown {
-    font-family: 'Exo 2', sans-serif !important;
-    color: var(--text-primary) !important;
-}
-
-/* ── Metric cards ── */
+/* Metric Cards */
 div[data-testid="stMetric"] {
-    background: var(--bg-card);
-    border: 1px solid var(--border-dim);
-    border-radius: 12px;
-    padding: 16px 20px;
-    box-shadow: var(--glow-blue);
-    transition: box-shadow 0.3s;
-}
-div[data-testid="stMetric"]:hover {
-    box-shadow: 0 0 25px rgba(0,212,255,0.45);
+    background: #ffffff !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 14px !important;
+    padding: 18px 22px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.06) !important;
 }
 div[data-testid="stMetric"] label {
-    color: var(--text-muted) !important;
-    font-family: 'Exo 2', sans-serif !important;
+    color: var(--text-secondary) !important;
     font-size: 0.85rem !important;
+    font-weight: 600 !important;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
 }
 div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
-    color: var(--accent-cyan) !important;
-    font-family: 'Orbitron', sans-serif !important;
-    font-weight: 600 !important;
-}
-div[data-testid="stMetric"] div[data-testid="stMetricDelta"] {
-    color: #4ade80 !important;
+    color: var(--accent-blue) !important;
+    font-weight: 800 !important;
+    font-family: 'JetBrains Mono', monospace !important;
 }
 
-/* ── Tab bar ── */
+/* Tabs */
 .stTabs [data-baseweb="tab-list"] {
-    background: var(--bg-secondary);
-    border-radius: 10px;
-    padding: 4px;
-    gap: 4px;
-    border: 1px solid var(--border-dim);
+    background-color: #f1f5f9;
+    border-radius: 12px;
+    padding: 6px;
+    gap: 6px;
+    border: 1px solid var(--border-color);
 }
 .stTabs [data-baseweb="tab"] {
     border-radius: 8px;
-    color: var(--text-muted) !important;
-    font-family: 'Exo 2', sans-serif !important;
+    color: var(--text-secondary) !important;
     font-weight: 600;
-    padding: 8px 16px;
-    transition: all 0.2s;
-}
-.stTabs [data-baseweb="tab"]:hover {
-    color: var(--accent-cyan) !important;
-    background: rgba(0,212,255,0.08);
+    padding: 8px 18px;
+    transition: all 0.2s ease;
 }
 .stTabs [aria-selected="true"] {
-    background: rgba(0,212,255,0.12) !important;
-    color: var(--accent-cyan) !important;
-    border-bottom: 2px solid var(--accent-cyan) !important;
-}
-
-/* ── DataFrame / tables ── */
-.stDataFrame, div[data-testid="stDataFrame"] {
-    border: 1px solid var(--border-dim);
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-/* ── Slider ── */
-.stSlider > div > div {
+    background-color: #ffffff !important;
     color: var(--accent-blue) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-/* ── Divider ── */
-hr {
-    border-color: var(--border-dim) !important;
+/* Callout banner */
+.problem-card {
+    background: #ffffff;
+    border-left: 5px solid #2563eb;
+    border-radius: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 20px;
 }
-
-/* ── Info / Warning banners ── */
-.stAlert {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border-dim) !important;
-    border-radius: 10px !important;
-    color: var(--text-primary) !important;
+.badge-danger {
+    background-color: #ffe4e6;
+    color: #e11d48;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.8rem;
 }
-
-/* ── Selectbox / multiselect ── */
-div[data-baseweb="select"] {
-    background: var(--bg-card) !important;
-    border-color: var(--border-dim) !important;
-    border-radius: 8px !important;
+.badge-safe {
+    background-color: #d1fae5;
+    color: #059669;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.8rem;
 }
 </style>
 """
-
-st.markdown(SPACE_CSS, unsafe_allow_html=True)
-
-# ------------------------------------------------------------------ #
-# Title                                                                #
-# ------------------------------------------------------------------ #
-st.markdown("# 🛰️ SPACE DEBRIS INTELLIGENCE")
-st.markdown("##### Uncertainty-Aware ML Triage · Optical Tracking · Active Debris Removal")
+st.markdown(LIGHT_CSS, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------ #
-# Load Data                                                            #
+# Header & Navigation                                                  #
+# ------------------------------------------------------------------ #
+col_title, col_status = st.columns([3, 1])
+with col_title:
+    st.markdown("## 🛰️ OrbitGuard: Conjunction Risk & Fuel Optimization Engine")
+    st.markdown(
+        "**Smart Risk Filter for Small Satellites** · NASA 2D Gaussian $P_c$ · TLE Age Error Ellipse · False Alarm Fatigue Suppression"
+    )
+
+with col_status:
+    st.markdown(
+        """
+        <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 10px; text-align: center;">
+            <span style="color: #059669; font-weight: bold; font-size: 0.85rem;">● SOCRATES Engine Active</span><br/>
+            <span style="color: #64748b; font-size: 0.75rem;">FastAPI Backend Ready</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# ------------------------------------------------------------------ #
+# Sidebar: Risk Threshold Controls                                     #
+# ------------------------------------------------------------------ #
+st.sidebar.markdown("### ⚙️ Engine Risk Controls")
+max_tle_age = st.sidebar.slider(
+    "Max Acceptable TLE Age (Days)",
+    min_value=0.5,
+    max_value=7.0,
+    value=2.5,
+    step=0.5,
+    help="TLEs older than this expand error bubbles exponentially, creating false alarms.",
+)
+
+pc_exp = st.sidebar.slider(
+    "Critical Collision Probability Threshold log10(Pc)",
+    min_value=-5.0,
+    max_value=-2.0,
+    value=-4.0,
+    step=0.2,
+    help="Standard NASA collision threshold is 1e-4 (0.0001).",
+)
+pc_threshold = 10 ** pc_exp
+
+fuel_cost_usd = st.sidebar.slider(
+    "Maneuver Cost per Burn ($ USD)",
+    min_value=200,
+    max_value=3000,
+    value=800,
+    step=100,
+    help="Average propellant depletion & operational overhead per avoidance maneuver.",
+)
+
+st.sidebar.divider()
+st.sidebar.markdown(
+    """
+    <div style="font-size: 0.8rem; color: #64748b;">
+        <strong>Backend Architecture:</strong><br/>
+        • <code>/api/conjunction/calculate</code><br/>
+        • <code>/api/conjunction/candidates</code><br/>
+        • <code>/api/metrics/summary</code>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ------------------------------------------------------------------ #
+# Load & Process Data with NASA 2D Gaussian Model                      #
 # ------------------------------------------------------------------ #
 data_path = Path("data/processed/scored_candidates.csv")
 if not data_path.exists():
-    st.warning("No data found. Please run the pipeline first: `python -m src.main`")
+    st.warning("⚠️ No candidate data found. Please run: `python -m src.main`")
     st.stop()
 
-data = pd.read_csv(data_path)
-class_map = {0: "Payload", 1: "Rocket Body", 2: "Known Debris", 3: "Foreign/Unknown"}
-data['classification_label'] = data.get(
-    'object_classification', pd.Series(["Unknown"] * len(data))
-).map(class_map).fillna("Unknown")
+raw_df = pd.read_csv(data_path)
+records = raw_df.to_dict(orient="records")
 
-# ------------------------------------------------------------------ #
-# Sidebar Filters                                                      #
-# ------------------------------------------------------------------ #
-st.sidebar.markdown("## 🔍 Mission Filters")
-selected_classes = st.sidebar.multiselect(
-    "Debris Classification",
-    options=["Payload", "Rocket Body", "Known Debris", "Foreign/Unknown"],
-    default=["Payload", "Rocket Body", "Known Debris", "Foreign/Unknown"],
+batch_summary = batch_evaluate_conjunctions(
+    candidates=records,
+    max_tle_age_threshold=max_tle_age,
+    pc_threshold=pc_threshold,
+    fuel_cost_usd=fuel_cost_usd,
 )
 
-filtered_data = data[data['classification_label'].isin(selected_classes)]
+eval_df = pd.DataFrame(batch_summary["candidates"])
 
 # ------------------------------------------------------------------ #
-# Top-level Metrics                                                    #
+# Top-Level Executive Metrics                                          #
 # ------------------------------------------------------------------ #
-col1, col2, col3 = st.columns(3)
-col1.metric("Total Encounters", len(filtered_data))
-
-anomaly_col = (
-    'anomaly_consensus' if 'anomaly_consensus' in data.columns
-    else ('anomaly_score' if 'anomaly_score' in data.columns else None)
+m1, m2, m3, m4 = st.columns(4)
+m1.metric("Total Ingested Alerts", batch_summary["total_alerts"])
+m2.metric(
+    "False Alarms Suppressed",
+    f"{batch_summary['suppression_rate_pct']}%",
+    delta=f"{batch_summary['false_alarms_suppressed']} alerts filtered",
 )
-if anomaly_col:
-    col2.metric("Critical Anomalies", len(filtered_data[filtered_data[anomaly_col] > 0]))
-else:
-    col2.metric("Critical Anomalies", 0)
-
-if 'adr_priority_score' in filtered_data.columns:
-    col3.metric("High Priority ADR Targets", len(filtered_data[filtered_data['adr_priority_score'] > 60.0]))
-else:
-    col3.metric("High Priority ADR Targets", 0)
+m3.metric("Actionable Risks", batch_summary["actionable_alerts"])
+m4.metric(
+    "Estimated Fuel Dollars Saved",
+    f"${batch_summary['total_fuel_dollars_saved']:,.0f}",
+    delta="Propellant Saved",
+)
 
 st.divider()
 
 # ------------------------------------------------------------------ #
-# Plotly Dark Template                                                 #
+# Main Tabs                                                            #
 # ------------------------------------------------------------------ #
-PLOT_TEMPLATE = dict(
-    layout=dict(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="#0e1225",
-        font=dict(family="Exo 2", color="#c0c8d4"),
-        xaxis=dict(gridcolor="#1c2240"),
-        yaxis=dict(gridcolor="#1c2240"),
-    )
-)
-
-# ------------------------------------------------------------------ #
-# Tabs                                                                 #
-# ------------------------------------------------------------------ #
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab_problem, tab_sim, tab_table, tab_3d, tab_optical = st.tabs([
+    "💡 Problem & Solution",
+    "🎯 Error Ellipse & NASA Pc Simulator",
+    "📋 Live Conjunction Feed & Actions",
     "🗺️ 3D Encounter Map",
-    "🤖 ML Model Comparison",
-    "📊 Debris Classifications",
     "🔭 Optical Streak Analysis",
-    "🎓 Academic Metrics",
-    "🧹 Active Debris Removal",
 ])
 
-# ── Tab 1: 3D Encounter Map ──
-with tab1:
-    if not filtered_data.empty and 'encounter_x' in filtered_data.columns:
+# ── TAB 1: Problem & Solution (from Prompt / Screenshot) ──
+with tab_problem:
+    st.markdown(
+        """
+        <div class="problem-card">
+            <h3 style="color: #2563eb; margin-top: 0;">1. The Problem: "False Alarm" Fatigue</h3>
+            <p style="color: #334155; font-size: 0.95rem;">
+                When satellites orbit Earth, they get public warnings from CelesTrak about nearby space debris.
+                However, public data uses an old format called <strong>TLE (Two-Line Element)</strong>. TLE data gets inaccurate within 1 to 2 days.
+                Because traditional screening software panics over these huge error margins, 
+                <strong>over 95% of crash warnings are false alarms</strong>. Small satellite operators get flooded with alerts and don't know which ones are real.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    c_left, c_right = st.columns(2)
+    with c_left:
+        st.markdown(
+            """
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; height: 100%;">
+                <h4 style="color: #0f172a; margin-top: 0;">🏢 How Big Companies Handle This</h4>
+                <p style="font-size: 0.85rem; color: #475569; font-weight: 600;">SpaceX, NASA, Large Defense</p>
+                <p style="color: #334155; font-size: 0.9rem;">
+                    They pay millions of dollars to private radar networks (like LeoLabs) or receive classified military tracking to know exact satellite positions. They can easily afford high-end tracking tools.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with c_right:
+        st.markdown(
+            """
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; height: 100%;">
+                <h4 style="color: #0f172a; margin-top: 0;">🚀 Small Companies & Indian Startups</h4>
+                <p style="font-size: 0.85rem; color: #e11d48; font-weight: 600;">Budget Constrained Operators</p>
+                <p style="color: #334155; font-size: 0.9rem;">
+                    They cannot afford expensive radar subscriptions. They rely on free public CelesTrak data and calculate risks manually on spreadsheets, <strong>often burning precious satellite fuel on fake alarms</strong>.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("<br/>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px;">
+            <h4 style="color: #166534; margin-top: 0;">🛡️ Our Solution: Smart Conjunction Risk Filter</h4>
+            <ul style="color: #14532d; font-size: 0.9rem; line-height: 1.7;">
+                <li><strong>TLE Age Penalty ($\sigma_{DSE}$):</strong> We calculate how old the CelesTrak data is. If data is 3 days old and distance is 1 km, our system marks it as a <em>False Alarm (High Uncertainty)</em>. If data is fresh and distance is close, it marks it as <em>Real Danger</em>.</li>
+                <li><strong>NASA Standard Formula:</strong> We use NASA's 2D Gaussian Covariance formula to calculate the true collision probability ($P_c$) mathematically instead of making simple distance guesses.</li>
+                <li><strong>Fuel Savings Metric:</strong> Shows satellite operators exact quantitative ROI: <em>Total Alerts Ingested</em>, <em>False Alarms Filtered Out</em>, and <em>Estimated Fuel Dollars Saved</em>.</li>
+            </ul>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# ── TAB 2: Interactive Error Ellipse & NASA Pc Simulator ──
+with tab_sim:
+    st.subheader("🎯 Orbital Conjunction & Covariance Error Ellipse Simulator")
+    st.caption("Inspect how aging TLE data artificially blows up covariance error bubbles, causing phantom collision warnings.")
+
+    sim_col1, sim_col2 = st.columns([1, 1])
+    with sim_col1:
+        sim_age = st.slider("Simulated TLE Age (Days Since Epoch)", 0.1, 7.0, 3.2, 0.1)
+        sim_miss = st.slider("Simulated Miss Distance (km)", 0.05, 5.0, 1.20, 0.05)
+
+        # Run single calculation
+        res = calculate_nasa_2d_gaussian_pc(
+            miss_distance_km=sim_miss,
+            tle_age_days=sim_age,
+            max_tle_age_threshold=max_tle_age,
+            pc_threshold=pc_threshold,
+            fuel_cost_usd=fuel_cost_usd,
+        )
+
+        st.markdown(
+            f"""
+            <div style="background: {'#fef2f2' if not res.is_false_alarm else '#f0fdf4'}; 
+                        border: 1px solid {'#fecaca' if not res.is_false_alarm else '#bbf7d0'}; 
+                        border-radius: 12px; padding: 16px; margin-top: 15px;">
+                <span style="font-size: 0.8rem; font-weight: bold; color: {'#e11d48' if not res.is_false_alarm else '#059669'};">
+                    ENGINE CLASSIFICATION: {res.classification}
+                </span>
+                <h4 style="margin: 6px 0; color: {'#991b1b' if not res.is_false_alarm else '#166534'};">
+                    DECISION: {res.decision}
+                </h4>
+                <p style="font-size: 0.85rem; color: #334155; margin-bottom: 0;">
+                    {res.decision_reason}
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # Formula Metrics Box
+        st.markdown("<br/>", unsafe_allow_html=True)
+        c_m1, c_m2, c_m3 = st.columns(3)
+        c_m1.metric("Calculated Pc", res.raw_pc_exponential)
+        c_m2.metric("Covariance Sigma", f"{res.sigma_km} km")
+        c_m3.metric("Sigma Expansion", f"{res.sigma_expansion_ratio}x")
+
+    with sim_col2:
+        # Plotly Covariance Error Ellipse Canvas
+        theta = np.linspace(0, 2 * np.pi, 200)
+        # Primary sat at origin (0, 0)
+        sat_x, sat_y = 0.0, 0.0
+        
+        # Debris center placed at (miss_dist, 0)
+        deb_x = sim_miss
+        deb_y = 0.0
+
+        # Covariance semi-major and semi-minor axis based on sigma
+        a = res.sigma_km * 1.5
+        b = res.sigma_km * 0.8
+
+        ellipse_x = deb_x + a * np.cos(theta)
+        ellipse_y = deb_y + b * np.sin(theta)
+
+        fig_ellipse = go.Figure()
+
+        # Error Ellipse Area
+        fig_ellipse.add_trace(go.Scatter(
+            x=ellipse_x, y=ellipse_y,
+            fill='toself',
+            fillcolor='rgba(239, 68, 68, 0.15)' if not res.is_false_alarm else 'rgba(217, 119, 6, 0.15)',
+            line=dict(color='#e11d48' if not res.is_false_alarm else '#d97706', width=2, dash='dash'),
+            name=f"Covariance Bubble ({res.sigma_expansion_ratio}x σ)",
+        ))
+
+        # Vector line
+        fig_ellipse.add_trace(go.Scatter(
+            x=[sat_x, deb_x], y=[sat_y, deb_y],
+            mode='lines+text',
+            text=["", f"d = {sim_miss:.2f} km"],
+            textposition="top center",
+            line=dict(color='#0284c7', width=2, dash='dot'),
+            name="Encounter Miss Vector",
+        ))
+
+        # Primary Sat Point
+        fig_ellipse.add_trace(go.Scatter(
+            x=[sat_x], y=[sat_y],
+            mode='markers+text',
+            marker=dict(size=14, color='#2563eb', symbol='circle'),
+            text=["Primary Satellite"],
+            textposition="bottom center",
+            name="Primary Satellite",
+        ))
+
+        # Debris Point
+        fig_ellipse.add_trace(go.Scatter(
+            x=[deb_x], y=[deb_y],
+            mode='markers+text',
+            marker=dict(size=10, color='#e11d48', symbol='diamond'),
+            text=[f"Debris (DSE: {sim_age:.1f}d)"],
+            textposition="bottom center",
+            name="Debris Object",
+        ))
+
+        fig_ellipse.update_layout(
+            title="Conjunction Plane (Error Bubble Overlay)",
+            xaxis_title="Relative In-Plane (km)",
+            yaxis_title="Cross-Plane (km)",
+            paper_bgcolor="#ffffff",
+            plot_bgcolor="#f8fafc",
+            showlegend=True,
+            height=380,
+            xaxis=dict(range=[-1.0, max(5.0, sim_miss + a + 1.0)], zeroline=True, gridcolor="#e2e8f0"),
+            yaxis=dict(range=[-max(3.0, b + 1.0), max(3.0, b + 1.0)], zeroline=True, gridcolor="#e2e8f0"),
+        )
+        st.plotly_chart(fig_ellipse, use_container_width=True)
+
+# ── TAB 3: Conjunction Feed & Operator Decisions ──
+with tab_table:
+    st.subheader("📋 Conjunction Alerts & Fuel Action Center")
+    filter_choice = st.radio(
+        "Display Filter:",
+        ["All Alerts", "Actionable Maneuvers Only", "Suppressed False Alarms Only"],
+        horizontal=True,
+    )
+
+    if filter_choice == "Actionable Maneuvers Only":
+        display_df = eval_df[~eval_df["is_false_alarm"]]
+    elif filter_choice == "Suppressed False Alarms Only":
+        display_df = eval_df[eval_df["is_false_alarm"]]
+    else:
+        display_df = eval_df
+
+    cols_to_show = [
+        "obj_a", "obj_b", "miss_distance_km", "data_age_hours",
+        "raw_pc_exp", "sigma_expansion", "classification", "decision", "decision_reason",
+    ]
+    exist_cols = [c for c in cols_to_show if c in display_df.columns]
+
+    st.dataframe(
+        display_df[exist_cols].rename(columns={
+            "obj_a": "Primary Sat",
+            "obj_b": "Debris ID",
+            "miss_distance_km": "Miss Dist (km)",
+            "data_age_hours": "Data Age (h)",
+            "raw_pc_exp": "Calculated Pc",
+            "sigma_expansion": "Sigma Exp (x)",
+            "decision": "Action",
+            "decision_reason": "Decision Explanation",
+        }),
+        use_container_width=True,
+        height=400,
+    )
+
+# ── TAB 4: 3D Encounter Map ──
+with tab_3d:
+    st.subheader("🗺️ 3D TEME Coordinate Encounter Positions")
+    if 'encounter_x' in eval_df.columns:
         fig_3d = px.scatter_3d(
-            filtered_data,
+            eval_df,
             x='encounter_x', y='encounter_y', z='encounter_z',
-            color=anomaly_col,
+            color='is_false_alarm',
+            color_discrete_map={True: "#d97706", False: "#e11d48"},
             hover_name='obj_b',
-            hover_data=['miss_distance_km', 'classification_label'],
-            color_continuous_scale="Plasma",
-            title="TEME Encounter Positions",
+            hover_data=['miss_distance_km', 'raw_pc_exp', 'decision'],
+            title="Spatial Distribution of Conjunction Encounters",
         )
         fig_3d.update_traces(marker=dict(size=4, opacity=0.8))
-        fig_3d.update_layout(**PLOT_TEMPLATE["layout"])
+        fig_3d.update_layout(
+            paper_bgcolor="#ffffff",
+            plot_bgcolor="#f8fafc",
+            height=500,
+        )
         st.plotly_chart(fig_3d, use_container_width=True)
 
-# ── Tab 2: ML Model Comparison ──
-with tab2:
-    cols = st.columns(2)
-    with cols[0]:
-        target_cols = [
-            'obj_a', 'obj_b', 'iforest_anomaly', 'svm_anomaly',
-            'lof_anomaly', 'anomaly_score', 'anomaly_consensus',
-        ]
-        exist_cols = [c for c in target_cols if c in filtered_data.columns]
-        if exist_cols:
-            sort_c = 'anomaly_consensus' if 'anomaly_consensus' in exist_cols else exist_cols[-1]
-            st.dataframe(
-                filtered_data[exist_cols].sort_values(sort_c, ascending=False).head(15),
-                use_container_width=True,
-            )
-    with cols[1]:
-        if (not filtered_data.empty and anomaly_col
-                and 'relative_velocity_kms' in filtered_data.columns):
-            fig_vel = px.scatter(
-                filtered_data,
-                x="time_to_approach_hours",
-                y="relative_velocity_kms",
-                color=anomaly_col,
-                size="miss_distance_km",
-                hover_data=["classification_label"],
-                color_continuous_scale="Viridis",
-                title="Velocity vs Time-to-Approach",
-            )
-            fig_vel.update_layout(**PLOT_TEMPLATE["layout"])
-            st.plotly_chart(fig_vel, use_container_width=True)
+# ── TAB 5: Optical Streak Analysis ──
+with tab_optical:
+    st.subheader("🔭 Telescope Feed Optical Debris Detection")
+    st.caption("AutoEncoder-assisted background suppression and streak vectorization.")
+    optical_dir = Path("data/optical_frames")
+    available_images = list(optical_dir.glob("*.jpg")) + list(optical_dir.glob("*.png"))
 
-# ── Tab 3: Debris Classifications ──
-with tab3:
-    pie_col, box_col = st.columns(2)
-    with pie_col:
-        class_counts = filtered_data['classification_label'].value_counts().reset_index()
-        class_counts.columns = ['Classification', 'Count']
-        if not class_counts.empty:
-            fig_pie = px.pie(
-                class_counts, names='Classification', values='Count',
-                title="Distribution of Tracked Objects",
-                hole=0.4, color='Classification',
-                color_discrete_map={
-                    "Payload": "#00d4ff",
-                    "Rocket Body": "#7b61ff",
-                    "Known Debris": "#f59e0b",
-                    "Foreign/Unknown": "#ef4444",
-                },
-            )
-            fig_pie.update_layout(**PLOT_TEMPLATE["layout"])
-            st.plotly_chart(fig_pie, use_container_width=True)
-    with box_col:
-        if not filtered_data.empty and 'data_age_hours' in filtered_data.columns:
-            fig_box = px.box(
-                filtered_data,
-                x="classification_label", y="data_age_hours",
-                color="classification_label",
-                title="Data Age Degradation by Object Type",
-                color_discrete_map={
-                    "Payload": "#00d4ff",
-                    "Rocket Body": "#7b61ff",
-                    "Known Debris": "#f59e0b",
-                    "Foreign/Unknown": "#ef4444",
-                },
-            )
-            fig_box.update_layout(**PLOT_TEMPLATE["layout"])
-            st.plotly_chart(fig_box, use_container_width=True)
-
-    base_cols = ['obj_a', 'obj_b', 'classification_label', 'miss_distance_km', 'time_to_approach_hours']
-    if anomaly_col:
-        base_cols.append(anomaly_col)
-    exist_base = [c for c in base_cols if c in filtered_data.columns]
-    st.dataframe(filtered_data[exist_base], use_container_width=True)
-
-# ── Tab 4: Optical Streak Analysis ──
-with tab4:
-    st.subheader("Local Dataset Telescope Feed Analysis")
-    col_opt1, col_opt2 = st.columns([2, 1])
-    with col_opt1:
-        optical_dir = Path("data/optical_frames")
-        available_images = list(optical_dir.glob("*.jpg")) + list(optical_dir.glob("*.png"))
-
-        if available_images:
-            selected_img = st.selectbox("Select Local Astronomical Image:", [img.name for img in available_images])
-            img_path = optical_dir / selected_img
-            frame = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
-        else:
-            st.warning("No local images found in data/optical_frames. Using a synthetic frame.")
-            frame = np.zeros((512, 512), dtype=np.uint8)
-            cv2.line(frame, (80, 120), (340, 380), 255, 2)
-
-        streak_len = st.slider("Min Streak Length (px)", 10, 200, 50)
-
-        if frame is not None:
-            detections, _ = detect_streaks(frame, min_length=streak_len)
-            annotated = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
-            for d in detections:
-                if isinstance(d, dict) and 'start' in d and 'end' in d:
-                    cv2.line(annotated, d['start'], d['end'], (0, 212, 255), 2)
-            st.image(annotated, caption="Deep Learning Extracted Debris Vectors (Cyan)", use_container_width=True)
-        else:
-            st.error("Failed to load image data.")
-            detections = []
-
-    with col_opt2:
-        st.write(f"**Detected Candidate Streaks:** `{len(detections) if 'detections' in locals() else 0}`")
-        if 'detections' in locals() and detections:
-            st.dataframe(pd.DataFrame(detections), use_container_width=True)
-
-# ── Tab 5: Academic Metrics ──
-with tab5:
-    st.subheader("Formal Research Evaluation")
-    budget_hours = st.slider("Nightly Telescope Budget (Hours)", 1.0, 12.0, 4.0, 0.5)
-    slots = int((budget_hours * 60) // 15)
-
-    if 'object_classification' in data.columns and anomaly_col and 'relative_velocity_kms' in data.columns:
-        b_queue = data.sort_values("miss_distance_km", ascending=True).head(slots)
-        data["triage_rank"] = (
-            data[anomaly_col] * 100.0
-            + data["relative_velocity_kms"]
-            - data["miss_distance_km"] / 1000.0
-        )
-        m_queue = data.sort_values("triage_rank", ascending=False).head(slots)
-
-        b_crit = len(b_queue[(b_queue["object_classification"] == 3) | (b_queue[anomaly_col] > 0)])
-        m_crit = len(m_queue[(m_queue["object_classification"] == 3) | (m_queue[anomaly_col] > 0)])
-
-        col_s1, col_s2 = st.columns(2)
-        col_s1.metric("Anomalies Caught (Distance-Only)", f"{b_crit} / {slots}")
-        col_s2.metric(
-            "Anomalies Caught (ML Ensemble)",
-            f"{m_crit} / {slots}",
-            delta=f"+{m_crit - b_crit} over baseline",
-        )
-
-# ── Tab 6: Active Debris Removal ──
-with tab6:
-    st.subheader("🧹 Active Debris Removal (ADR) Prioritisation")
-    if 'adr_priority_score' in filtered_data.columns:
-        adr_cols = [
-            c for c in [
-                'obj_a', 'obj_b', 'classification_label', 'miss_distance_km',
-                'adr_rf_score', 'adr_gb_score', 'adr_priority_score',
-            ] if c in filtered_data.columns
-        ]
-        adr_data = filtered_data[adr_cols].sort_values('adr_priority_score', ascending=False)
-        st.dataframe(adr_data, use_container_width=True)
-        st.info("Model Comparison: Random Forest and Gradient Boosting regressors independently weigh mass proxies and collision risk.")
+    if available_images:
+        selected_img = st.selectbox("Select Astronomical Image:", [img.name for img in available_images])
+        img_path = optical_dir / selected_img
+        frame = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
     else:
-        st.warning("No ADR scores found in data. Please run the main pipeline.")
+        st.info("Using simulated streak frame.")
+        frame = np.zeros((512, 512), dtype=np.uint8)
+        cv2.line(frame, (80, 120), (340, 380), 255, 2)
+
+    streak_len = st.slider("Min Streak Length (px)", 10, 200, 50)
+    if frame is not None:
+        detections, _ = detect_streaks(frame, min_length=streak_len)
+        annotated = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+        for d in detections:
+            if isinstance(d, dict) and 'start' in d and 'end' in d:
+                cv2.line(annotated, d['start'], d['end'], (225, 29, 72), 2)
+        st.image(annotated, caption="Extracted Debris Vectors (Red)", use_container_width=True)

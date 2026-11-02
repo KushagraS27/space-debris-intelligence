@@ -1,4 +1,4 @@
-﻿requests
+requests
 pandas
 plotly
 scikit-learn
@@ -6,3 +6,6 @@ tensorflow-cpu
 opencv-python-headless
 sgp4
 streamlit
+fastapi
+uvicorn
+pydantic
