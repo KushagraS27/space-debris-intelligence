@@ -408,9 +408,45 @@ with tab_sim:
     ellipse_x = deb_x + ellipse_x_unrot * np.cos(rad) - ellipse_y_unrot * np.sin(rad)
     ellipse_y = deb_y + ellipse_x_unrot * np.sin(rad) + ellipse_y_unrot * np.cos(rad)
 
-    fig_sim = go.Figure()
+    # Calculate approach trajectory animation path (debris moving toward closest approach point)
+    n_frames = 25
+    traj_alpha = np.linspace(2.5, 0.0, n_frames)  # approaching from distance down to closest approach
+    
+    frames = []
+    for f_idx, alpha in enumerate(traj_alpha):
+        # Position of debris along incoming orbital track
+        curr_deb_x = deb_x + alpha * 1.5 * np.cos(rad)
+        curr_deb_y = deb_y + alpha * 1.5 * np.sin(rad)
+        
+        # Moving covariance bubble centered on moving debris
+        curr_el_x = curr_deb_x + ellipse_x_unrot * np.cos(rad) - ellipse_y_unrot * np.sin(rad)
+        curr_el_y = curr_deb_y + ellipse_x_unrot * np.sin(rad) + ellipse_y_unrot * np.cos(rad)
 
-    # Covariance Uncertainty Bubble
+        frames.append(go.Frame(
+            data=[
+                # Trace 0: Covariance bubble
+                go.Scatter(x=curr_el_x, y=curr_el_y),
+                # Trace 1: Keep out
+                go.Scatter(x=0.50 * np.cos(theta), y=0.50 * np.sin(theta)),
+                # Trace 2: Flight vector
+                go.Scatter(),
+                # Trace 3: Distance line
+                go.Scatter(x=[sat_x, curr_deb_x], y=[sat_y, curr_deb_y]),
+                # Trace 4: Satellite marker
+                go.Scatter(x=[sat_x], y=[sat_y]),
+                # Trace 5: Debris marker
+                go.Scatter(
+                    x=[curr_deb_x],
+                    y=[curr_deb_y],
+                    text=[f"Approaching Space Debris Target (Distance: {np.hypot(curr_deb_x, curr_deb_y):.2f} km)"],
+                ),
+            ],
+            name=f"frame_{f_idx}",
+        ))
+
+    fig_sim = go.Figure(frames=frames)
+
+    # Trace 0: Covariance Uncertainty Bubble
     fig_sim.add_trace(go.Scatter(
         x=ellipse_x, y=ellipse_y,
         fill='toself',
@@ -419,7 +455,7 @@ with tab_sim:
         name=f"Covariance Uncertainty Bubble ({sim_res.sigma_expansion_ratio}x Standard Inflation)",
     ))
 
-    # Satellite 0.50 km Keep-Out Circle
+    # Trace 1: Satellite 0.50 km Keep-Out Circle
     fig_sim.add_trace(go.Scatter(
         x=0.50 * np.cos(theta), y=0.50 * np.sin(theta),
         fill='toself',
@@ -428,17 +464,17 @@ with tab_sim:
         name="Satellite Safety Perimeter (0.50 Kilometers)",
     ))
 
-    # Flight Trajectory Path
-    t_len = max(3.5, sim_miss * 1.8)
+    # Trace 2: Flight Trajectory Path
+    t_len = max(4.5, sim_miss * 2.5)
     fig_sim.add_trace(go.Scatter(
-        x=[-t_len * 0.7, t_len * 0.7],
-        y=[-t_len * 0.7, t_len * 0.7],
+        x=[-t_len * 0.4, t_len * 1.4],
+        y=[-t_len * 0.4, t_len * 1.4],
         mode='lines',
         line=dict(color='rgba(59, 130, 246, 0.6)', width=2.5),
-        name="Primary Satellite Flight Vector",
+        name="Incoming Orbital Track Vector",
     ))
 
-    # Miss Distance Vector Line
+    # Trace 3: Miss Distance Vector Line
     fig_sim.add_trace(go.Scatter(
         x=[sat_x, deb_x], y=[sat_y, deb_y],
         mode='lines',
@@ -446,7 +482,7 @@ with tab_sim:
         name="Direct Distance Vector",
     ))
 
-    # Primary Satellite Center Marker
+    # Trace 4: Primary Satellite Center Marker
     fig_sim.add_trace(go.Scatter(
         x=[sat_x], y=[sat_y],
         mode='markers+text',
@@ -457,20 +493,20 @@ with tab_sim:
         name="Primary Active Satellite",
     ))
 
-    # Space Debris Center Marker
+    # Trace 5: Space Debris Center Marker
     fig_sim.add_trace(go.Scatter(
         x=[deb_x], y=[deb_y],
         mode='markers+text',
         marker=dict(size=16, color='#ff0055', symbol='diamond', line=dict(color='#ffffff', width=2)),
-        text=[f"Space Debris Target (Separation: {sim_miss:.2f} Kilometers)"],
+        text=[f"Space Debris Target (Closest Separation: {sim_miss:.2f} Kilometers)"],
         textposition="top right",
         textfont=dict(size=12, color="#ff3366", family="Orbitron"),
         name="Space Debris Target",
     ))
 
-    x_max = max(3.0, float(sim_miss + a_axis + 1.2))
+    x_max = max(4.0, float(sim_miss + a_axis + 2.5))
     fig_sim.update_layout(
-        height=540,
+        height=560,
         showlegend=True,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="#0c1122",
@@ -478,28 +514,48 @@ with tab_sim:
         legend=dict(
             orientation="h",
             yanchor="bottom",
-            y=1.02,
+            y=1.08,
             xanchor="center",
             x=0.5,
             bgcolor="rgba(14, 19, 34, 0.8)",
             bordercolor="rgba(0, 240, 255, 0.2)",
             borderwidth=1,
         ),
+        updatemenus=[dict(
+            type="buttons",
+            showactive=False,
+            direction="left",
+            x=0.0,
+            y=1.14,
+            pad=dict(r=10, t=10),
+            buttons=[
+                dict(
+                    label="▶ Run Simulation",
+                    method="animate",
+                    args=[None, dict(frame=dict(duration=80, redraw=True), fromcurrent=True, mode="immediate", transition=dict(duration=40))],
+                ),
+                dict(
+                    label="⏸ Pause Simulation",
+                    method="animate",
+                    args=[[None], dict(frame=dict(duration=0, redraw=False), mode="immediate", transition=dict(duration=0))],
+                ),
+            ],
+        )],
         xaxis=dict(
             title="In-Track Coordinate Plane (Kilometers)",
-            range=[-x_max * 0.6, x_max],
+            range=[-x_max * 0.5, x_max * 1.1],
             gridcolor="#1b2440",
             zerolinecolor="#334155",
             zerolinewidth=1.5,
         ),
         yaxis=dict(
             title="Cross-Track Coordinate Plane (Kilometers)",
-            range=[-x_max * 0.6, x_max * 0.8],
+            range=[-x_max * 0.5, x_max * 0.9],
             gridcolor="#1b2440",
             zerolinecolor="#334155",
             zerolinewidth=1.5,
         ),
-        margin=dict(l=40, r=40, t=60, b=40),
+        margin=dict(l=40, r=40, t=90, b=40),
     )
     st.plotly_chart(fig_sim, use_container_width=True)
 
@@ -614,13 +670,23 @@ with tab_ml:
     col_feat1, col_feat2 = st.columns(2)
     with col_feat1:
         if 'relative_velocity_kms' in eval_df.columns and 'miss_distance_km' in eval_df.columns:
+            # Map boolean to clean high-contrast categorical text labels
+            scatter_df = eval_df.copy()
+            scatter_df['Conjunction Category'] = scatter_df['is_false_alarm'].map({
+                True: "Suppressed False Alarm (Safe)",
+                False: "Actionable Collision Hazard (Real Danger)",
+            })
+
             fig_ml_scatter = px.scatter(
-                eval_df,
+                scatter_df,
                 x='miss_distance_km',
                 y='relative_velocity_kms',
-                color='is_false_alarm',
+                color='Conjunction Category',
                 size='data_age_hours',
-                color_discrete_map={False: "#ff0055", True: "#00ffcc"},
+                color_discrete_map={
+                    "Actionable Collision Hazard (Real Danger)": "#ff0055",
+                    "Suppressed False Alarm (Safe)": "#00ffcc",
+                },
                 hover_data=['obj_b', 'raw_pc_exp'],
                 title="Model Feature Space: Miss Distance vs Relative Velocity",
             )
@@ -630,17 +696,34 @@ with tab_ml:
                 font=dict(color="#cbd5e1"),
                 xaxis=dict(title="Miss Distance (Kilometers)", gridcolor="#1b2440"),
                 yaxis=dict(title="Relative Velocity (Kilometers / Second)", gridcolor="#1b2440"),
-                height=380,
+                height=400,
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="center",
+                    x=0.5,
+                    bgcolor="rgba(14, 19, 34, 0.8)",
+                ),
             )
             st.plotly_chart(fig_ml_scatter, use_container_width=True)
 
     with col_feat2:
         if 'data_age_hours' in eval_df.columns:
+            hist_df = eval_df.copy()
+            hist_df['Conjunction Category'] = hist_df['is_false_alarm'].map({
+                True: "Suppressed False Alarm (Safe)",
+                False: "Actionable Collision Hazard (Real Danger)",
+            })
+
             fig_hist = px.histogram(
-                eval_df,
+                hist_df,
                 x='data_age_hours',
-                color='is_false_alarm',
-                color_discrete_map={False: "#ff0055", True: "#00ffcc"},
+                color='Conjunction Category',
+                color_discrete_map={
+                    "Actionable Collision Hazard (Real Danger)": "#ff0055",
+                    "Suppressed False Alarm (Safe)": "#00ffcc",
+                },
                 nbins=25,
                 title="Data Staleness Distribution (False Alarms vs Real Danger)",
             )
@@ -650,7 +733,15 @@ with tab_ml:
                 font=dict(color="#cbd5e1"),
                 xaxis=dict(title="Tracking Data Age (Hours)", gridcolor="#1b2440"),
                 yaxis=dict(title="Encounter Count", gridcolor="#1b2440"),
-                height=380,
+                height=400,
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="center",
+                    x=0.5,
+                    bgcolor="rgba(14, 19, 34, 0.8)",
+                ),
             )
             st.plotly_chart(fig_hist, use_container_width=True)
 
