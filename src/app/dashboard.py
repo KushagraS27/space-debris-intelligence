@@ -297,9 +297,9 @@ with tab_sim:
 
     sim_c1, sim_c2 = st.columns([1, 1.25])
     with sim_c1:
-        sim_age = st.slider("TLE Age (Days Since Epoch)", 0.1, 7.0, 3.2, 0.1)
-        sim_miss = st.slider("Encounter Miss Distance (km)", 0.05, 5.0, 1.20, 0.05)
-        sim_angle = st.slider("Relative Trajectory Angle (°)", 0, 180, 50, 5)
+        sim_age = st.slider("Tracking Data Age (Days Since Epoch)", min_value=0.1, max_value=7.0, value=3.2, step=0.1)
+        sim_miss = st.slider("Encounter Miss Distance (Kilometers)", min_value=0.05, max_value=5.0, value=1.20, step=0.05)
+        sim_angle = st.slider("Relative Trajectory Angle (Degrees)", min_value=0, max_value=180, value=50, step=5)
 
         sim_res = calculate_nasa_2d_gaussian_pc(
             miss_distance_km=sim_miss,
@@ -317,10 +317,10 @@ with tab_sim:
             f"""
             <div style="background: {badge_bg}; border: 1px solid {badge_border}; border-radius: 12px; padding: 18px; margin-top: 15px;">
                 <span style="font-family: Orbitron; font-size: 0.82rem; font-weight: bold; color: {badge_text};">
-                    CLASSIFICATION: {sim_res.classification}
+                    RISK CLASSIFICATION: {sim_res.classification}
                 </span>
                 <h3 style="margin: 6px 0; color: #ffffff; font-family: Orbitron;">
-                    ACTION: {sim_res.decision}
+                    RECOMMENDED DECISION: {sim_res.decision}
                 </h3>
                 <p style="font-size: 0.88rem; color: #cbd5e1; margin-bottom: 0;">
                     {sim_res.decision_reason}
@@ -332,9 +332,9 @@ with tab_sim:
 
         st.markdown("<br/>", unsafe_allow_html=True)
         m_s1, m_s2, m_s3 = st.columns(3)
-        m_s1.metric("Calculated Pc", sim_res.raw_pc_exponential)
-        m_s2.metric("Positional Sigma", f"{sim_res.sigma_km} km")
-        m_s3.metric("Sigma Expansion", f"{sim_res.sigma_expansion_ratio}x")
+        m_s1.metric("Collision Probability (Pc)", f"{sim_res.raw_pc:.6f}")
+        m_s2.metric("Positional Uncertainty (Sigma)", f"{sim_res.sigma_km} Kilometers")
+        m_s3.metric("Error Bubble Inflation", f"{sim_res.sigma_expansion_ratio} Times Normal Size")
 
     with sim_c2:
         # High precision 2D encounter geometry
@@ -358,18 +358,18 @@ with tab_sim:
         fig_sim.add_trace(go.Scatter(
             x=ellipse_x, y=ellipse_y,
             fill='toself',
-            fillcolor='rgba(244, 63, 94, 0.22)' if not sim_res.is_false_alarm else 'rgba(245, 158, 11, 0.16)',
-            line=dict(color='#f43f5e' if not sim_res.is_false_alarm else '#f59e0b', width=2, dash='dash'),
-            name=f"Covariance Error Bubble ({sim_res.sigma_expansion_ratio}x σ)",
+            fillcolor='rgba(244, 63, 94, 0.28)' if not sim_res.is_false_alarm else 'rgba(0, 255, 204, 0.16)',
+            line=dict(color='#ff0055' if not sim_res.is_false_alarm else '#00ffcc', width=2.5, dash='dash'),
+            name=f"Covariance Error Bubble ({sim_res.sigma_expansion_ratio} Times Standard Sigma)",
         ))
 
         # 2. Satellite 0.5 km Keep-Out Zone
         fig_sim.add_trace(go.Scatter(
             x=0.5 * np.cos(theta), y=0.5 * np.sin(theta),
             fill='toself',
-            fillcolor='rgba(0, 240, 255, 0.10)',
-            line=dict(color='#00f0ff', width=1.5, dash='dot'),
-            name="Satellite Safety Sphere (0.5 km)",
+            fillcolor='rgba(0, 240, 255, 0.12)',
+            line=dict(color='#00f0ff', width=2, dash='dot'),
+            name="Satellite Safety Perimeter (0.50 Kilometers)",
         ))
 
         # 3. Trajectory Lines
@@ -378,55 +378,58 @@ with tab_sim:
             x=[-traj_len * np.sin(rad), traj_len * np.sin(rad)],
             y=[traj_len * np.cos(rad), -traj_len * np.cos(rad)],
             mode='lines',
-            line=dict(color='rgba(59, 130, 246, 0.4)', width=2),
-            name="Primary Orbit Path",
+            line=dict(color='rgba(59, 130, 246, 0.6)', width=2.5),
+            name="Primary Satellite Orbital Path",
         ))
 
         # 4. Miss Vector
         fig_sim.add_trace(go.Scatter(
             x=[sat_x, deb_x], y=[sat_y, deb_y],
             mode='lines+text',
-            text=["", f"d = {sim_miss:.2f} km"],
+            text=["", f"Separation Distance = {sim_miss:.2f} Kilometers"],
             textposition="top center",
-            line=dict(color='#00f0ff', width=2),
-            name="Miss Distance Vector",
+            textfont=dict(size=12, color="#00f0ff", family="JetBrains Mono"),
+            line=dict(color='#00f0ff', width=2.5),
+            name="Encounter Separation Vector",
         ))
 
         # 5. Satellite & Debris Markers
         fig_sim.add_trace(go.Scatter(
             x=[sat_x], y=[sat_y],
             mode='markers+text',
-            marker=dict(size=14, color='#00f0ff', symbol='circle', line=dict(color='#ffffff', width=1)),
-            text=["Primary Satellite"],
+            marker=dict(size=16, color='#00f0ff', symbol='circle', line=dict(color='#ffffff', width=2)),
+            text=["Primary Satellite (Active)"],
             textposition="bottom center",
-            name="Primary Satellite",
+            textfont=dict(size=12, color="#ffffff"),
+            name="Primary Satellite Center",
         ))
 
         fig_sim.add_trace(go.Scatter(
             x=[deb_x], y=[deb_y],
             mode='markers+text',
-            marker=dict(size=12, color='#f43f5e', symbol='diamond', line=dict(color='#ffffff', width=1)),
-            text=[f"Debris ({sim_age:.1f}d)"],
+            marker=dict(size=15, color='#ff0055', symbol='diamond', line=dict(color='#ffffff', width=2)),
+            text=[f"Space Debris (Age: {sim_age:.1f} Days)"],
             textposition="top right",
-            name="Debris Object",
+            textfont=dict(size=12, color="#ff3366"),
+            name="Space Debris Object Center",
         ))
 
         axis_limit = max(4.0, float(sim_miss + a_axis + 0.8))
         fig_sim.update_layout(
-            title="Conjunction Encounter Plane (True Scale)",
-            height=440,
+            title="Conjunction Encounter Plane (True Physical Scale)",
+            height=460,
             showlegend=True,
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="#0c1122",
             font=dict(family="Inter", color="#cbd5e1"),
             xaxis=dict(
-                title="Relative In-Track (km)",
+                title="Relative In-Track Coordinate (Kilometers)",
                 range=[-axis_limit * 0.7, axis_limit],
                 gridcolor="#1b2440",
                 zerolinecolor="#334155",
             ),
             yaxis=dict(
-                title="Relative Cross-Track (km)",
+                title="Relative Cross-Track Coordinate (Kilometers)",
                 range=[-axis_limit * 0.7, axis_limit * 0.7],
                 gridcolor="#1b2440",
                 zerolinecolor="#334155",
@@ -458,14 +461,14 @@ with tab_table:
 
     st.dataframe(
         display_df[exist_cols].rename(columns={
-            "obj_a": "Primary Sat",
-            "obj_b": "Debris NORAD",
-            "miss_distance_km": "Miss Dist (km)",
-            "data_age_hours": "Data Age (h)",
-            "raw_pc_exp": "Calculated Pc",
-            "sigma_expansion": "Sigma Exp (x)",
-            "decision": "Recommended Action",
-            "decision_reason": "Operational Rationale",
+            "obj_a": "Primary Satellite Identifier",
+            "obj_b": "Debris Catalog Number",
+            "miss_distance_km": "Miss Distance (Kilometers)",
+            "data_age_hours": "Tracking Data Age (Hours)",
+            "raw_pc_exp": "Collision Probability (Scientific Notation)",
+            "sigma_expansion": "Position Uncertainty Expansion Factor",
+            "decision": "Operational Decision",
+            "decision_reason": "Complete Mathematical Explanation",
         }),
         use_container_width=True,
         height=400,
@@ -508,20 +511,33 @@ with tab_3d:
             name="LEO 500km Reference Ring",
         ))
 
-        # 3. Actionable Real Threats (Red Glowing Orbs)
+        # 3. Actionable Real Threat Debris (High-Risk Confirmed Encounters)
         actionable_df = eval_df[~eval_df["is_false_alarm"]]
         if not actionable_df.empty:
             fig_earth.add_trace(go.Scatter3d(
                 x=actionable_df['encounter_x'],
                 y=actionable_df['encounter_y'],
                 z=actionable_df['encounter_z'],
-                mode='markers',
-                marker=dict(size=6, color='#f43f5e', symbol='diamond', opacity=0.95),
-                text=actionable_df.apply(lambda r: f"NORAD {r['obj_b']}<br>Miss: {r['miss_distance_km']:.1f} km<br>Pc: {r['raw_pc_exp']}", axis=1),
-                name="Actionable Real Threat",
+                mode='markers+text',
+                marker=dict(
+                    size=12,
+                    color='#ff0055',
+                    symbol='diamond',
+                    opacity=1.0,
+                    line=dict(color='#ffffff', width=2),
+                ),
+                text=actionable_df.apply(lambda r: f"DANGER: Object {r['obj_b']}", axis=1),
+                textposition="top center",
+                textfont=dict(color="#ff3366", size=10, family="Orbitron"),
+                hovertext=actionable_df.apply(
+                    lambda r: f"<b>CRITICAL RISK ENCOUNTER</b><br>Primary Target: {r['obj_a']}<br>Debris Catalog: {r['obj_b']}<br>Miss Separation: {r['miss_distance_km']:.2f} kilometers<br>Collision Probability: {r['raw_pc_exp']}<br>Status: {r['decision']}",
+                    axis=1,
+                ),
+                hoverinfo="text",
+                name="CRITICAL RISK: Real Threat Debris",
             ))
 
-        # 4. Suppressed False Alarms (Amber / Cyan Dots)
+        # 4. Suppressed False Alarm Debris (High Uncertainty Phantom Alerts)
         suppressed_df = eval_df[eval_df["is_false_alarm"]]
         if not suppressed_df.empty:
             fig_earth.add_trace(go.Scatter3d(
@@ -529,9 +545,19 @@ with tab_3d:
                 y=suppressed_df['encounter_y'],
                 z=suppressed_df['encounter_z'],
                 mode='markers',
-                marker=dict(size=3.5, color='#f59e0b', opacity=0.6),
-                text=suppressed_df.apply(lambda r: f"NORAD {r['obj_b']}<br>Miss: {r['miss_distance_km']:.1f} km<br>Suppressed (Aged TLE)", axis=1),
-                name="Suppressed False Alarm",
+                marker=dict(
+                    size=7,
+                    color='#00ffcc',
+                    symbol='circle',
+                    opacity=0.75,
+                    line=dict(color='#006655', width=1),
+                ),
+                hovertext=suppressed_df.apply(
+                    lambda r: f"<b>SUPPRESSED FALSE ALARM</b><br>Primary Target: {r['obj_a']}<br>Debris Catalog: {r['obj_b']}<br>Miss Separation: {r['miss_distance_km']:.2f} kilometers<br>Data Age: {r['data_age_hours']:.1f} hours<br>Reason: {r['decision_reason']}",
+                    axis=1,
+                ),
+                hoverinfo="text",
+                name="FALSE ALARM: Stale Tracking Debris (Suppressed)",
             ))
 
         fig_earth.update_layout(
