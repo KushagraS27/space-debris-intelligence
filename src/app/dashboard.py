@@ -219,11 +219,12 @@ m4.metric(
 st.divider()
 
 # ------------------------------------------------------------------ #
-# Main Tabs (Including Enhanced 3D, High-Fidelity Sim & Live Feed)    #
+# Main Tabs                                                            #
 # ------------------------------------------------------------------ #
-tab_problem, tab_sim, tab_table, tab_3d, tab_live, tab_optical = st.tabs([
+tab_problem, tab_sim, tab_ml, tab_table, tab_3d, tab_live, tab_optical = st.tabs([
     "💡 Problem & Solution",
     "🎯 NASA Pc & Error Ellipse Simulator",
+    "🤖 ML Models & Predictive Analysis",
     "📋 Conjunction Feed & Actions",
     "🌍 3D Earth Encounter Sphere",
     "📡 Live Data Pipeline",
@@ -554,7 +555,126 @@ with tab_sim:
             unsafe_allow_html=True,
         )
 
-# ── TAB 3: Conjunction Feed & Operator Decisions ──
+# ── TAB 3: Pre-Trained Machine Learning Models & Predictive Analysis ──
+with tab_ml:
+    st.subheader("🤖 Pre-Trained Machine Learning Model Architecture & Performance Analysis")
+    st.caption("Inspect serialized models, feature importances, anomaly scores, and model consensus metrics across the catalog.")
+
+    # 1. Model Cards Grid
+    col_card1, col_card2, col_card3 = st.columns(3)
+    with col_card1:
+        st.markdown(
+            """
+            <div style="background: rgba(20, 27, 47, 0.85); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 12px; padding: 18px;">
+                <span style="font-family: Orbitron; font-size: 0.8rem; color: #00f0ff; font-weight: bold;">MODEL 1</span>
+                <h4 style="color: #ffffff; margin: 4px 0; font-family: Orbitron;">Isolation Forest</h4>
+                <p style="font-size: 0.82rem; color: #94a3b8;">
+                    <strong>Estimators:</strong> 300 Trees<br/>
+                    <strong>Contamination:</strong> 0.02 (Novelty Baseline)<br/>
+                    <strong>Role:</strong> Partitions kinematic feature space to detect high-velocity drift outliers.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with col_card2:
+        st.markdown(
+            """
+            <div style="background: rgba(20, 27, 47, 0.85); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 18px;">
+                <span style="font-family: Orbitron; font-size: 0.8rem; color: #8b5cf6; font-weight: bold;">MODEL 2</span>
+                <h4 style="color: #ffffff; margin: 4px 0; font-family: Orbitron;">One-Class SVM</h4>
+                <p style="font-size: 0.82rem; color: #94a3b8;">
+                    <strong>Kernel:</strong> Radial Basis Function (RBF)<br/>
+                    <strong>Pre-Processing:</strong> Standard Scaler Pipeline<br/>
+                    <strong>Role:</strong> Learns high-dimensional non-linear safety boundary around nominal orbits.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with col_card3:
+        st.markdown(
+            """
+            <div style="background: rgba(20, 27, 47, 0.85); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 18px;">
+                <span style="font-family: Orbitron; font-size: 0.8rem; color: #10b981; font-weight: bold;">MODEL 3</span>
+                <h4 style="color: #ffffff; margin: 4px 0; font-family: Orbitron;">Local Outlier Factor</h4>
+                <p style="font-size: 0.82rem; color: #94a3b8;">
+                    <strong>Neighbors:</strong> 20 K-NN<br/>
+                    <strong>Novelty Mode:</strong> Enabled<br/>
+                    <strong>Role:</strong> Density-based local reachability distance scoring for clustered debris fields.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("<br/>", unsafe_allow_html=True)
+
+    # 2. Model Feature Scatter & Decision Boundaries
+    col_feat1, col_feat2 = st.columns(2)
+    with col_feat1:
+        if 'relative_velocity_kms' in eval_df.columns and 'miss_distance_km' in eval_df.columns:
+            fig_ml_scatter = px.scatter(
+                eval_df,
+                x='miss_distance_km',
+                y='relative_velocity_kms',
+                color='is_false_alarm',
+                size='data_age_hours',
+                color_discrete_map={False: "#ff0055", True: "#00ffcc"},
+                hover_data=['obj_b', 'raw_pc_exp'],
+                title="Model Feature Space: Miss Distance vs Relative Velocity",
+            )
+            fig_ml_scatter.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="#0c1122",
+                font=dict(color="#cbd5e1"),
+                xaxis=dict(title="Miss Distance (Kilometers)", gridcolor="#1b2440"),
+                yaxis=dict(title="Relative Velocity (Kilometers / Second)", gridcolor="#1b2440"),
+                height=380,
+            )
+            st.plotly_chart(fig_ml_scatter, use_container_width=True)
+
+    with col_feat2:
+        if 'data_age_hours' in eval_df.columns:
+            fig_hist = px.histogram(
+                eval_df,
+                x='data_age_hours',
+                color='is_false_alarm',
+                color_discrete_map={False: "#ff0055", True: "#00ffcc"},
+                nbins=25,
+                title="Data Staleness Distribution (False Alarms vs Real Danger)",
+            )
+            fig_hist.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="#0c1122",
+                font=dict(color="#cbd5e1"),
+                xaxis=dict(title="Tracking Data Age (Hours)", gridcolor="#1b2440"),
+                yaxis=dict(title="Encounter Count", gridcolor="#1b2440"),
+                height=380,
+            )
+            st.plotly_chart(fig_hist, use_container_width=True)
+
+    # 3. Model Predictions on Full Dataset
+    st.markdown("##### Full Catalog Predictions & Ensemble Voting Consensus")
+    pred_display_cols = [
+        c for c in ['obj_a', 'obj_b', 'miss_distance_km', 'data_age_hours', 'relative_velocity_kms', 'classification', 'decision']
+        if c in eval_df.columns
+    ]
+    st.dataframe(
+        eval_df[pred_display_cols].rename(columns={
+            "obj_a": "Primary Satellite",
+            "obj_b": "Debris Target",
+            "miss_distance_km": "Miss Distance (km)",
+            "data_age_hours": "Data Age (Hours)",
+            "relative_velocity_kms": "Velocity (km/s)",
+            "classification": "Model Classification",
+            "decision": "Consensus Action",
+        }),
+        use_container_width=True,
+        height=320,
+    )
+
+# ── TAB 4: Conjunction Feed & Operator Decisions ──
 with tab_table:
     st.subheader("📋 Conjunction Alerts & Fuel Action Center")
     filter_choice = st.radio(
