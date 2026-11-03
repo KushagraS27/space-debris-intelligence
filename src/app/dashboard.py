@@ -196,7 +196,7 @@ st.markdown(
                     🛰️ SPACE DEBRIS <span style="color: #00f0ff;">INTELLIGENCE</span>
                 </h1>
                 <p style="color: #94a3b8; font-size: 0.95rem; margin-top: 6px; margin-bottom: 0; font-weight: 400;">
-                    Autonomous Space Situational Awareness (SSA) · NASA 2D Gaussian $P_c$ · TLE Covariance Desensitization · Optical Trail Extraction
+                    Autonomous Space Situational Awareness (SSA) · NASA 2D Gaussian <em>P</em><sub>c</sub> · TLE Covariance Desensitization · Optical Trail Extraction
                 </p>
             </div>
             <div style="display: flex; align-items: center; gap: 12px;">
@@ -361,7 +361,7 @@ with tab_problem:
             <h4 style="color: #10b981; margin-top: 0; font-family: Orbitron;">🛡️ Our Solution & Advantages</h4>
             <ul style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.8;">
                 <li><strong style="color: #00f0ff;">TLE Age Penalty (σ_DSE):</strong> We compute how old the tracking data is. If data is 3 days old and distance is 1 km, our system marks it as a <em>False Alarm (High Uncertainty)</em>. If data is fresh and distance is close, it flags an actionable <em>Real Danger</em>.</li>
-                <li><strong style="color: #00f0ff;">NASA Standard Formula:</strong> We apply NASA's 2D Gaussian Covariance formulation to calculate the true collision probability ($P_c$) mathematically instead of naive distance guessing.</li>
+                <li><strong style="color: #00f0ff;">NASA Standard Formula:</strong> We apply NASA's 2D Gaussian Covariance formulation to calculate the true collision probability (<em>P</em><sub>c</sub>) mathematically instead of naive distance guessing.</li>
                 <li><strong style="color: #00f0ff;">Fuel Savings Metric:</strong> Directly quantifies operator ROI: <em>Total Alerts Ingested</em>, <em>False Alarms Filtered Out</em>, and <em>Estimated Fuel Dollars Saved</em>.</li>
             </ul>
         </div>
