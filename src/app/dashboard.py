@@ -1,4 +1,5 @@
 import sys
+import base64
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
@@ -19,7 +20,7 @@ from src.orbits.conjunction_risk import (
 from src.data.fetch_gp import fetch_gp_snapshot
 
 # ------------------------------------------------------------------ #
-# 🌌 Page Configuration & Deep Space Dark Styling                    #
+# 🌌 Page Configuration & Ultra-Realistic Deep Space Cosmos Styling   #
 # ------------------------------------------------------------------ #
 st.set_page_config(
     page_title="Space Debris Intelligence",
@@ -28,89 +29,157 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-SPACE_CSS = """
+# Load real milky way starfield background if present
+bg_img_path = Path(__file__).parent / "space_background.jpg"
+if bg_img_path.exists():
+    with open(bg_img_path, "rb") as f_bg:
+        encoded_bg = base64.b64encode(f_bg.read()).decode("utf-8")
+    bg_css = f"""
+    .stApp {{
+        background: 
+            linear-gradient(rgba(5, 8, 18, 0.88), rgba(5, 8, 18, 0.94)),
+            url("data:image/jpeg;base64,{encoded_bg}") no-repeat center center fixed !important;
+        background-size: cover !important;
+        color: #e2e8f0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }}
+    """
+else:
+    bg_css = """
+    .stApp {
+        background: radial-gradient(circle at 50% 15%, #0f172a 0%, #060913 85%) !important;
+        color: #e2e8f0;
+        font-family: 'Inter', sans-serif;
+    }
+    """
+
+SPACE_CSS = f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
-:root {
-    --bg-primary:   #080b14;
-    --bg-secondary: #0e1322;
-    --bg-card:      #141b2f;
+{bg_css}
+
+:root {{
+    --bg-primary:   #060913;
+    --bg-glass:     rgba(13, 19, 36, 0.72);
+    --bg-glass-card:rgba(18, 25, 48, 0.65);
     --accent-cyan:  #00f0ff;
+    --accent-cyan-glow: rgba(0, 240, 255, 0.35);
     --accent-blue:  #3b82f6;
-    --accent-purple:#8b5cf6;
-    --accent-rose:  #f43f5e;
-    --accent-amber: #f59e0b;
-    --accent-green: #10b981;
-    --text-primary: #e2e8f0;
+    --accent-purple:#a855f7;
+    --accent-rose:  #ff0055;
+    --accent-green: #00ffcc;
+    --text-primary: #f8fafc;
     --text-muted:   #94a3b8;
-    --border-dim:   rgba(0, 240, 255, 0.15);
-}
+    --border-glass: rgba(0, 240, 255, 0.18);
+    --border-subtle:rgba(255, 255, 255, 0.08);
+}}
 
-.stApp {
-    background: radial-gradient(circle at 50% 10%, #111a33 0%, #080b14 75%);
-    color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
-}
+/* Top App Header Banner */
+.hero-header {{
+    background: linear-gradient(135deg, rgba(14, 21, 42, 0.8) 0%, rgba(8, 12, 24, 0.9) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-glass);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 240, 255, 0.05);
+    border-radius: 16px;
+    padding: 22px 28px;
+    margin-bottom: 24px;
+}}
 
-/* Sidebar */
-section[data-testid="stSidebar"] {
-    background-color: #0b0f1d !important;
-    border-right: 1px solid var(--border-dim) !important;
-}
+/* Modern Glassmorphic Sidebar */
+section[data-testid="stSidebar"] {{
+    background: rgba(6, 10, 22, 0.88) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-right: 1px solid var(--border-glass) !important;
+}}
 
-/* Metric Cards */
-div[data-testid="stMetric"] {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border-dim) !important;
+/* Glassmorphism Metric KPI Cards */
+div[data-testid="stMetric"] {{
+    background: var(--bg-glass-card) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid var(--border-glass) !important;
     border-radius: 14px !important;
     padding: 16px 20px !important;
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.08) !important;
-}
-div[data-testid="stMetric"] label {
-    color: var(--text-muted) !important;
-    font-size: 0.82rem !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.03) !important;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}}
+div[data-testid="stMetric"]:hover {{
+    transform: translateY(-2px);
+    border-color: rgba(0, 240, 255, 0.45) !important;
+}}
+div[data-testid="stMetric"] label {{
+    color: #94a3b8 !important;
+    font-size: 0.78rem !important;
     font-weight: 600 !important;
     text-transform: uppercase;
-    letter-spacing: 0.6px;
-}
-div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
-    color: var(--accent-cyan) !important;
-    font-weight: 700 !important;
+    letter-spacing: 0.8px;
+}}
+div[data-testid="stMetric"] div[data-testid="stMetricValue"] {{
+    color: #ffffff !important;
+    font-weight: 800 !important;
     font-family: 'Orbitron', sans-serif !important;
-}
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 12px rgba(0, 240, 255, 0.35);
+}}
 
-/* Tab Headers */
-.stTabs [data-baseweb="tab-list"] {
-    background-color: var(--bg-secondary);
-    border-radius: 12px;
-    padding: 5px;
-    gap: 6px;
-    border: 1px solid var(--border-dim);
-}
-.stTabs [data-baseweb="tab"] {
-    border-radius: 8px;
-    color: var(--text-muted) !important;
-    font-weight: 600;
-    padding: 8px 18px;
-    transition: all 0.2s ease;
-}
-.stTabs [aria-selected="true"] {
-    background-color: rgba(0, 240, 255, 0.12) !important;
-    color: var(--accent-cyan) !important;
-    border-bottom: 2px solid var(--accent-cyan) !important;
-}
+/* Premium Tab Headers */
+.stTabs [data-baseweb="tab-list"] {{
+    background: rgba(10, 15, 30, 0.75) !important;
+    backdrop-filter: blur(12px) !important;
+    border-radius: 14px !important;
+    padding: 6px !important;
+    gap: 8px !important;
+    border: 1px solid var(--border-glass) !important;
+}}
+.stTabs [data-baseweb="tab"] {{
+    border-radius: 10px !important;
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+    padding: 9px 18px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: 1px solid transparent !important;
+}}
+.stTabs [data-baseweb="tab"]:hover {{
+    color: #e2e8f0 !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+}}
+.stTabs [aria-selected="true"] {{
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.16) 0%, rgba(59, 130, 246, 0.12) 100%) !important;
+    color: #00f0ff !important;
+    border: 1px solid rgba(0, 240, 255, 0.4) !important;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.15) !important;
+}}
 
-.problem-box {
-    background: linear-gradient(135deg, rgba(20, 27, 47, 0.8) 0%, rgba(14, 19, 34, 0.9) 100%);
-    border-left: 4px solid var(--accent-cyan);
-    border-radius: 12px;
-    padding: 18px 22px;
-    border-top: 1px solid var(--border-dim);
-    border-right: 1px solid var(--border-dim);
-    border-bottom: 1px solid var(--border-dim);
+/* Professional Aerospace Glass Cards */
+.pro-card {{
+    background: linear-gradient(135deg, rgba(16, 24, 48, 0.75) 0%, rgba(10, 15, 30, 0.85) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-glass);
+    border-radius: 14px;
+    padding: 20px 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     margin-bottom: 20px;
-}
+}}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {{
+    width: 6px;
+    height: 6px;
+}}
+::-webkit-scrollbar-track {{
+    background: #080b14;
+}}
+::-webkit-scrollbar-thumb {{
+    background: rgba(0, 240, 255, 0.3);
+    border-radius: 4px;
+}}
+::-webkit-scrollbar-thumb:hover {{
+    background: rgba(0, 240, 255, 0.6);
+}}
 </style>
 """
 st.markdown(SPACE_CSS, unsafe_allow_html=True)
@@ -118,21 +187,29 @@ st.markdown(SPACE_CSS, unsafe_allow_html=True)
 # ------------------------------------------------------------------ #
 # Title Header                                                         #
 # ------------------------------------------------------------------ #
-col_title, col_badge = st.columns([3, 1])
-with col_title:
-    st.markdown("<h1 style='font-family: Orbitron; letter-spacing: 1.5px; margin-bottom: 0;'>🛰️ SPACE DEBRIS INTELLIGENCE</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.95rem; margin-top: 4px;'><b>Conjunction Risk & Fuel Optimization Engine</b> · NASA 2D Gaussian $P_c$ · TLE Age Uncertainty Filter · Optical Streak Detection</p>", unsafe_allow_html=True)
-
-with col_badge:
-    st.markdown(
-        """
-        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 10px; padding: 10px; text-align: center;">
-            <span style="color: #10b981; font-weight: bold; font-family: JetBrains Mono; font-size: 0.85rem;">● SYSTEM OPERATIONAL</span><br/>
-            <span style="color: #94a3b8; font-size: 0.75rem;">FastAPI :8000 | Client Ready</span>
+st.markdown(
+    """
+    <div class="hero-header">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h1 style="font-family: 'Orbitron', sans-serif; font-size: 2.1rem; font-weight: 800; letter-spacing: 2px; margin: 0; color: #ffffff; text-shadow: 0 0 25px rgba(0, 240, 255, 0.4);">
+                    🛰️ SPACE DEBRIS <span style="color: #00f0ff;">INTELLIGENCE</span>
+                </h1>
+                <p style="color: #94a3b8; font-size: 0.95rem; margin-top: 6px; margin-bottom: 0; font-weight: 400;">
+                    Autonomous Space Situational Awareness (SSA) · NASA 2D Gaussian $P_c$ · TLE Covariance Desensitization · Optical Trail Extraction
+                </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 10px; padding: 8px 16px; text-align: center;">
+                    <span style="color: #10b981; font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; letter-spacing: 0.5px;">● SYSTEM ACTIVE</span>
+                    <div style="color: #64748b; font-size: 0.72rem; margin-top: 2px;">FastAPI :8000 | SGP4 Real-Time</div>
+                </div>
+            </div>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # ------------------------------------------------------------------ #
 # Sidebar: Threshold Controls                                          #
